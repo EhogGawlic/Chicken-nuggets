@@ -12,6 +12,15 @@ let bowls = []
 let mx,my
 let cbowl
 let score = 0
+let upgs = {
+    autoclicker: false,
+    mult: 1
+}
+let costs = {
+    autoclicker: 200,
+    mult: 300,
+    bowls:100
+}
 ctx.fillText("<--Rice bowl", 220, 120, 500)
 function drawBowl(x,y,szx,szy){
     ctx.lineWidth=5
@@ -40,7 +49,7 @@ function drawBowl(x,y,szx,szy){
 bowls.push([100,100,2])
 drawBowl(100,100,2,2)
 for (let i = 0; i < 20; i++){
-    const x = Math.random()*sz.width
+    const x = Math.random()*(sz.width-300)
     const y = Math.random()*sz.height
     const syz = Math.random()+1
     drawBowl(x,y,syz,syz)
@@ -53,7 +62,7 @@ canv.addEventListener("mousemove", (e)=>{
 canv.addEventListener("click", (e)=>{
     if (cbowl !== undefined){
         bowls.splice(cbowl,1)
-        const x = Math.random()*sz.width
+        const x = Math.random()*(sz.width-300)
     const y = Math.random()*sz.height
     const syz = Math.random()+1
     drawBowl(x,y,syz,syz)
@@ -63,9 +72,56 @@ canv.addEventListener("click", (e)=>{
             drawBowl(b[0],b[1],b[2],b[2])
         })
         
-        score+=5
+        score+=5*upgs.mult
         ctx.fillText("Score: "+score, 10, 50)
     }
+})
+document.getElementById("multiplier").addEventListener("click", ()=>{
+    if (score >= costs.mult){
+        upgs.mult +=1
+        score-=costs.mult
+        costs.mult = Math.round(300*upgs.mult*1.1)
+        document.getElementById("multiplier").innerText = "multiplier ("+costs.mult.toFixed(0)+" pts)"
+        ctx.clearRect(0,0,canv.width,canv.height)
+        bowls.forEach(b=>{
+            drawBowl(b[0],b[1],b[2],b[2])
+        })
+        ctx.fillText("Score: "+score, 10, 50)
+    }
+})
+document.getElementById("abowl").addEventListener("click", ()=>{
+    if (score >= costs.bowls){
+        score-=costs.bowls
+        costs.bowls = Math.round(costs.bowls*1.1)
+        const x = Math.random()*(sz.width-300)
+        const y = Math.random()*sz.height
+        const syz = Math.random()+1
+        drawBowl(x,y,syz,syz)
+        bowls.push([x,y,syz])
+        ctx.clearRect(0,0,canv.width,canv.height)
+        bowls.forEach(b=>{
+            drawBowl(b[0],b[1],b[2],b[2])
+        })
+        ctx.fillText("Score: "+score, 10, 50)
+        document.getElementById("abowl").innerText = "add bowl ("+costs.bowls.toFixed(0)+" pts)"
+    }
+})
+document.getElementById("aapbowl").addEventListener("click", ()=>{
+    while (score >= costs.bowls){
+        score-=costs.bowls
+        costs.bowls = Math.round(costs.bowls*1.1)
+        const x = Math.random()*(sz.width-300)
+        const y = Math.random()*sz.height
+        const syz = Math.random()+1
+        drawBowl(x,y,syz,syz)
+        bowls.push([x,y,syz])
+    }
+    ctx.clearRect(0,0,canv.width,canv.height)
+    bowls.forEach(b=>{
+        drawBowl(b[0],b[1],b[2],b[2])
+    })
+    ctx.fillText("Score: "+score, 10, 50)
+        document.getElementById("abowl").innerText = "add bowl ("+costs.bowls.toFixed(0)+" pts)"
 })
 function outputD(t){
     outdiv.innerText+=t+"\n"
@@ -75,6 +131,35 @@ function outputD(t){
         outdiv.innerText=""
     }
 }
+document.getElementById("autoclicker").addEventListener("click", ()=>{
+    if (score >= 200 && !upgs.autoclicker){
+        upgs.autoclicker = true
+        score-=200
+        ctx.clearRect(0,0,canv.width,canv.height)
+        bowls.forEach(b=>{
+            drawBowl(b[0],b[1],b[2],b[2])
+        })
+        ctx.fillText("Score: "+score, 10, 50)
+        setInterval(()=>{
+            if (cbowl !== undefined){
+                bowls.splice(cbowl,1)
+                const x = Math.random()*(sz.width-300)
+                const y = Math.random()*sz.height
+                const syz = Math.random()+1
+                drawBowl(x,y,syz,syz)
+                bowls.push([x,y,syz])
+                ctx.clearRect(0,0,canv.width,canv.height)
+                bowls.forEach(b=>{
+                    drawBowl(b[0],b[1],b[2],b[2])
+                })
+                
+                score+=5*upgs.mult
+                ctx.fillText("Score: "+score, 10, 50)
+            }
+        },20)
+    }
+})
+
 function run(){
     let bowl
     bowls.forEach((b,i)=>{
