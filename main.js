@@ -22,6 +22,23 @@ let costs = {
     bowls:100
 }
 ctx.fillText("<--Rice bowl", 220, 120, 500)
+function drawGrain(x,y,rot){
+    ctx.fillStyle="white"
+    ctx.beginPath()
+    ctx.ellipse(x,y,18,12,rot,0,2*Math.PI)
+    ctx.fill()
+}
+let grainPos=[
+
+]
+for (let i = 0; i < 50; i++){
+    const rx = Math.random()*80-50
+    const ry = Math.random()*40-20
+    if (ry > -15 && ry < 20 && Math.abs(rx) < 50 && Math.abs(ry) < 20){
+        grainPos.push([rx+10,ry-30,Math.random()*Math.PI])
+    }
+}
+
 function drawBowl(x,y,szx,szy){
     ctx.lineWidth=5
     const path = [
@@ -37,23 +54,32 @@ function drawBowl(x,y,szx,szy){
         [-20,-15],
         [-50,-20]
     ]
+    grainPos.forEach(g=>{
+        drawGrain(x+g[0]*szx,y+g[1]*szy,g[2])
+    })
     ctx.fillStyle="brown"
     ctx.beginPath()
     ctx.moveTo(path[0][0]*szx+x,path[0][1]*szy+y)
     for (let i = 1; i < path.length; i++){
         ctx.lineTo(path[i][0]*szx+x,path[i][1]*szy+y)
     }
+
     ctx.stroke()
     ctx.fill()
-}
+    }
 bowls.push([100,100,2])
 drawBowl(100,100,2,2)
-for (let i = 0; i < 20; i++){
+
+function addBowl(){
     const x = Math.random()*(sz.width-300)
     const y = Math.random()*sz.height
     const syz = Math.random()+1
     drawBowl(x,y,syz,syz)
     bowls.push([x,y,syz])
+}
+
+for (let i = 0; i < 20; i++){
+    addBowl()
 }
 canv.addEventListener("mousemove", (e)=>{
     mx=e.clientX
@@ -62,11 +88,7 @@ canv.addEventListener("mousemove", (e)=>{
 canv.addEventListener("click", (e)=>{
     if (cbowl !== undefined){
         bowls.splice(cbowl,1)
-        const x = Math.random()*(sz.width-300)
-    const y = Math.random()*sz.height
-    const syz = Math.random()+1
-    drawBowl(x,y,syz,syz)
-    bowls.push([x,y,syz])
+        addBowl()
         ctx.clearRect(0,0,canv.width,canv.height)
         bowls.forEach(b=>{
             drawBowl(b[0],b[1],b[2],b[2])
@@ -166,8 +188,8 @@ function run(){
         //outputD(i)
         if (mx > b[0]-b[2]*50 && my > b[1]-b[2]*20 && mx < b[0]+b[2]*50 && my < b[1]+b[2]*20){
             bowl = i
-        }
-    })
+    }
+})
     if (bowl !== undefined){
         canv.style.cursor = "pointer"
         cbowl = bowl+0
