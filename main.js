@@ -42,11 +42,11 @@ function saveGameState() {
         costs,
         people
     }
-    localStorage.setItem('chickenNuggetsGame', JSON.stringify(gameState))
+    localStorage.setItem('TheRice', JSON.stringify(gameState))
 }
 
 function loadGameState() {
-    const saved = localStorage.getItem('chickenNuggetsGame')
+    const saved = localStorage.getItem('TheRice')
     if (saved) {
         const gameState = JSON.parse(saved)
         score = gameState.score
@@ -54,6 +54,7 @@ function loadGameState() {
         upgs = gameState.upgs
         costs = gameState.costs
         people = gameState.people
+
         return true
     }
     return false
@@ -127,7 +128,7 @@ function addBowl(){
     bowls.push([x,y,syz])
 }
 
-for (let i = 0; i < 20; i++){
+for (let i = 0; i < 5; i++){
     addBowl()
 }
 canv.addEventListener("mousemove", (e)=>{
@@ -287,6 +288,48 @@ document.getElementById("buy4").addEventListener("click", ()=>{
         newli.innerText = "Asian ("+people[people.length-1].reward+" pts/s) - Upgrade ("+people[people.length-1].rcost+" pts)"
         
     }
+})
+document.getElementById("buy5").addEventListener("click", ()=>{
+    if (score >= 100000){
+        score-=100000
+        people.push({
+            speed: 10000,
+            upg: 0,
+            cost: 200,
+            reward: 10,
+            rupg: 0,
+            rcost: 200
+        })
+        let newli = document.createElement("li")
+        document.getElementById("buy1").parentNode.insertBefore(newli, document.getElementById("buy1").nextSibling)
+        newli.innerText = "Steven He ("+people[people.length-1].reward+" pts/s) - Upgrade ("+people[people.length-1].rcost+" pts)"
+        
+    }
+})
+document.getElementById("buy6").addEventListener("click", ()=>{
+    if (score >= 1000000){
+        score-=1000000
+        people.push({
+            speed: 100000,
+            upg: 0,
+            cost: 200,
+            reward: 100,
+            rupg: 0,
+            rcost: 200
+        })
+        let newli = document.createElement("li")
+        document.getElementById("buy1").parentNode.insertBefore(newli, document.getElementById("buy1").nextSibling)
+        newli.innerText = "Uncle Roger ("+people[people.length-1].reward+" pts/s) - Upgrade ("+people[people.length-1].rcost+" pts)"
+        
+    }
+})
+document.getElementById("sell").addEventListener("click", ()=>{
+    people.shift()
+    score+=500
+     let list = document.querySelectorAll("#buy1 ~ li")
+     if (list.length > 0){
+        list[0].remove()
+     }    
 })
 function run(){
     ctx.clearRect(0,0,canv.width,canv.height)
