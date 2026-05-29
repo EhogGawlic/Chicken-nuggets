@@ -237,6 +237,57 @@ document.getElementById("buy1").addEventListener("click", ()=>{
         
     }
 })
+document.getElementById("buy2").addEventListener("click", ()=>{
+    if (score >= 1500){
+        score-=1500
+        people.push({
+            speed: 100,
+            upg: 0,
+            cost: 200,
+            reward: 0.2,
+            rupg: 0,
+            rcost: 200
+        })
+        let newli = document.createElement("li")
+        document.getElementById("buy1").parentNode.insertBefore(newli, document.getElementById("buy1").nextSibling)
+        newli.innerText = "Mexican ("+people[people.length-1].reward+" pts/s) - Upgrade ("+people[people.length-1].rcost+" pts)"
+        
+    }
+})
+document.getElementById("buy3").addEventListener("click", ()=>{
+    if (score >= 2500){
+        score-=2500
+        people.push({
+            speed: 200,
+            upg: 0,
+            cost: 200,
+            reward: 0.5,
+            rupg: 0,
+            rcost: 200
+        })
+        let newli = document.createElement("li")
+        document.getElementById("buy1").parentNode.insertBefore(newli, document.getElementById("buy1").nextSibling)
+        newli.innerText = "Japanese ("+people[people.length-1].reward+" pts/s) - Upgrade ("+people[people.length-1].rcost+" pts)"
+        
+    }
+})
+document.getElementById("buy4").addEventListener("click", ()=>{
+    if (score >= 5000){
+        score-=5000
+        people.push({
+            speed: 500,
+            upg: 0,
+            cost: 200,
+            reward: 1,
+            rupg: 0,
+            rcost: 200
+        })
+        let newli = document.createElement("li")
+        document.getElementById("buy1").parentNode.insertBefore(newli, document.getElementById("buy1").nextSibling)
+        newli.innerText = "Asian ("+people[people.length-1].reward+" pts/s) - Upgrade ("+people[people.length-1].rcost+" pts)"
+        
+    }
+})
 function run(){
     ctx.clearRect(0,0,canv.width,canv.height)
     bowls.forEach(b=>{
