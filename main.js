@@ -14,7 +14,8 @@ let cbowl
 let score = 500
 let upgs = {
     autoclicker: false,
-    mult: 1
+    mult: 1,
+    vaccum: false
 }
 let costs = {
     autoclicker: 200,
@@ -71,11 +72,27 @@ if (!loadGameState()) {
     // First time or no save - initialize defaults
 }
 
+let skipSaveOnUnload = false
+
 // Autosave every 5 seconds
-setInterval(saveGameState, 5000)
+const saveIntervalId = setInterval(saveGameState, 5000)
 
 // Save on page exit
-window.addEventListener('beforeunload', saveGameState)
+window.addEventListener('beforeunload', (event) => {
+    if (!skipSaveOnUnload) {
+        saveGameState()
+    }
+})
+
+function clearSave(){
+    skipSaveOnUnload = true
+    clearInterval(saveIntervalId)
+    localStorage.removeItem('TheRice')
+    setTimeout(()=>{
+        alert("Save cleared! Refreshing the page...")
+        location.reload()
+    },1000)
+}
 
 ctx.fillText("<--Rice bowl", 220, 120, 500)
 function drawGrain(x,y,rot){
@@ -142,16 +159,30 @@ canv.addEventListener("mousemove", (e)=>{
     my=e.clientY
 })
 function consumeBowl(bowln){
-    const sz = bowls[bowln][2]
-    bowls.splice(bowln,1)
-    addBowl()
-    ctx.clearRect(0,0,canv.width,canv.height)
-    bowls.forEach(b=>{
-        drawBowl(b[0],b[1],b[2],b[2])
-    })
-    grains+=Math.round(50*upgs.mult*sz*0.66)
-    lastGrainConsumptionTime = performance.now()
-    grainAccumulator = 0
+    // start a collect animation on the existing bowl (don't remove it yet)
+    const b = bowls[bowln]
+    if (!b) return
+    // if this bowl is already being collected, ignore further requests
+    if (b[3]) return
+    const sz = b[2]
+    const amount = Math.round(50*upgs.mult*sz*0.66)
+    
+    // attach animation meta to the bowl so run() can animate it in-place
+    b[3] = {
+        startScale: sz,
+        amount: amount,
+        startTime: performance.now(),
+        duration: 250
+    }
+    // create a DOM popup that animates upward/fades (CSS handles removal timing)
+    const popup = document.createElement('div')
+    popup.className = 'collect-popup'
+    popup.style.left = (b[0]) + 'px'
+    popup.style.top = (b[1] - b[2]*12) + 'px'
+    popup.innerText = '+' + amount
+    document.body.appendChild(popup)
+    // remove the popup after animation finishes
+    setTimeout(()=>{ if (popup && popup.parentNode) popup.parentNode.removeChild(popup) }, 1000)
 }
 canv.addEventListener("click", (e)=>{
     if (cbowl !== undefined){
@@ -160,7 +191,7 @@ canv.addEventListener("click", (e)=>{
 })
 document.getElementById("multiplier").addEventListener("click", ()=>{
     if (score >= costs.mult){
-        upgs.mult +=1
+        upgs.mult *= 1.5
         score-=costs.mult
         costs.mult = Math.round(300*upgs.mult*1.1)
         document.getElementById("multiplier").innerText = "multiplier ("+costs.mult.toFixed(0)+" pts)"
@@ -198,12 +229,8 @@ document.getElementById("aapbowl").addEventListener("click", ()=>{
         drawBowl(x,y,syz,syz)
         bowls.push([x,y,syz])
     }
-    ctx.clearRect(0,0,canv.width,canv.height)
-    bowls.forEach(b=>{
-        drawBowl(b[0],b[1],b[2],b[2])
-    })
-    ctx.fillText("Score: "+score, 10, 50)
-        document.getElementById("abowl").innerText = "add bowl ("+costs.bowls.toFixed(0)+" pts)"
+    // simple redraw handled by main loop; update button text
+    document.getElementById("abowl").innerText = "add bowl ("+costs.bowls.toFixed(0)+" pts)"
 })
 function outputD(t){
     outdiv.innerText+=t+"\n"
@@ -238,10 +265,6 @@ document.getElementById("buy1").addEventListener("click", ()=>{
             rupg: 0,
             rcost: 200
         })
-        let newli = document.createElement("li")
-        document.getElementById("buy1").parentNode.insertBefore(newli, document.getElementById("buy1").nextSibling)
-        newli.innerText = "Person ("+people[people.length-1].reward+" pts/s) - Upgrade ("+people[people.length-1].rcost+" pts)"
-        
     }
 })
 document.getElementById("buy2").addEventListener("click", ()=>{
@@ -255,10 +278,6 @@ document.getElementById("buy2").addEventListener("click", ()=>{
             rupg: 0,
             rcost: 200
         })
-        let newli = document.createElement("li")
-        document.getElementById("buy1").parentNode.insertBefore(newli, document.getElementById("buy1").nextSibling)
-        newli.innerText = "Mexican ("+people[people.length-1].reward+" pts/s) - Upgrade ("+people[people.length-1].rcost+" pts)"
-        
     }
 })
 document.getElementById("buy3").addEventListener("click", ()=>{
@@ -272,10 +291,6 @@ document.getElementById("buy3").addEventListener("click", ()=>{
             rupg: 0,
             rcost: 200
         })
-        let newli = document.createElement("li")
-        document.getElementById("buy1").parentNode.insertBefore(newli, document.getElementById("buy1").nextSibling)
-        newli.innerText = "Japanese ("+people[people.length-1].reward+" pts/s) - Upgrade ("+people[people.length-1].rcost+" pts)"
-        
     }
 })
 document.getElementById("buy4").addEventListener("click", ()=>{
@@ -289,10 +304,6 @@ document.getElementById("buy4").addEventListener("click", ()=>{
             rupg: 0,
             rcost: 200
         })
-        let newli = document.createElement("li")
-        document.getElementById("buy1").parentNode.insertBefore(newli, document.getElementById("buy1").nextSibling)
-        newli.innerText = "Asian ("+people[people.length-1].reward+" pts/s) - Upgrade ("+people[people.length-1].rcost+" pts)"
-        
     }
 })
 document.getElementById("buy5").addEventListener("click", ()=>{
@@ -306,10 +317,6 @@ document.getElementById("buy5").addEventListener("click", ()=>{
             rupg: 0,
             rcost: 200
         })
-        let newli = document.createElement("li")
-        document.getElementById("buy1").parentNode.insertBefore(newli, document.getElementById("buy1").nextSibling)
-        newli.innerText = "Steven He ("+people[people.length-1].reward+" pts/s) - Upgrade ("+people[people.length-1].rcost+" pts)"
-        
     }
 })
 document.getElementById("buy6").addEventListener("click", ()=>{
@@ -323,10 +330,6 @@ document.getElementById("buy6").addEventListener("click", ()=>{
             rupg: 0,
             rcost: 200
         })
-        let newli = document.createElement("li")
-        document.getElementById("buy1").parentNode.insertBefore(newli, document.getElementById("buy1").nextSibling)
-        newli.innerText = "Uncle Roger ("+people[people.length-1].reward+" pts/s) - Upgrade ("+people[people.length-1].rcost+" pts)"
-        
     }
 })
 document.getElementById("sell").addEventListener("click", ()=>{
@@ -339,9 +342,33 @@ document.getElementById("sell").addEventListener("click", ()=>{
 })
 function run(){
     ctx.clearRect(0,0,canv.width,canv.height)
-    bowls.forEach(b=>{
-        drawBowl(b[0],b[1],b[2],b[2])
-    })
+    // draw bowls; if a bowl has an attached animation meta, animate it in-place
+    for (let i = 0; i < bowls.length; i++){
+        const b = bowls[i]
+        if (b[3]){
+            const a = b[3]
+            const nowAnim = performance.now()
+            const t = (nowAnim - a.startTime) / a.duration
+            const progress = Math.min(Math.max(t, 0), 1)
+            const easeOut = 1 - Math.pow(1 - progress, 3)
+            const finalScaleFactor = 0.05 // shrink nearly fully
+            const scale = a.startScale * (1 - (1 - finalScaleFactor) * easeOut)
+            drawBowl(b[0], b[1], scale, scale)
+            if (progress >= 1){
+                // finalize: credit grains and replace this bowl with a new random one
+                grains += a.amount
+                lastGrainConsumptionTime = nowAnim
+                grainAccumulator = 0
+                // replace bowl at this index with a new random bowl
+                const x = Math.random()*(sz.width-300)
+                const y = Math.random()*sz.height
+                const syz = Math.random()+1
+                bowls[i] = [x,y,syz]
+            }
+        } else {
+            drawBowl(b[0],b[1],b[2],b[2])
+        }
+    }
     ctx.strokeStyle="black"
     ctx.fillStyle="black"
     ctx.fillText("Score: "+score, 10, 50)
@@ -382,6 +409,13 @@ function run(){
     } else {
         canv.style.cursor = "default"
         cbowl=undefined
+    }
+    if (upgs.vaccum){
+        bowls.forEach((b,i)=>{
+            if(Math.sqrt((mx-b[0])**2+(my-b[1])**2) < 200){
+                consumeBowl(i)
+            }
+        })
     }
     requestAnimationFrame(run)
 }

@@ -28,3 +28,24 @@
     height: 100%;
     overflow:scroll
 }
+
+/* popup when collecting grains */
+.collect-popup{
+    position: absolute;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.8);
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 18px;
+    white-space: nowrap;
+    animation: popUp 700ms cubic-bezier(.2,.9,.3,1) forwards;
+}
+
+@keyframes popUp{
+    0%{ opacity: 0; transform: translate(-50%, 0) scale(0.9); }
+    20%{ opacity: 1; }
+    100%{ opacity: 0; transform: translate(-50%, -60px) scale(1.1); }
+}
