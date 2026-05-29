@@ -21,6 +21,17 @@ let costs = {
     mult: 300,
     bowls:100
 }
+let people = [
+    {
+        speed: 150,
+        upg: 0,
+        cost: 200,
+        reward: 0.1,
+        rupg: 0,
+        rcost: 200
+    }
+]
+let grains = 0
 ctx.fillText("<--Rice bowl", 220, 120, 500)
 function drawGrain(x,y,rot){
     ctx.fillStyle="white"
@@ -85,17 +96,18 @@ canv.addEventListener("mousemove", (e)=>{
     mx=e.clientX
     my=e.clientY
 })
+function consumeBowl(bowln){
+    bowls.splice(bowln,1)
+    addBowl()
+    ctx.clearRect(0,0,canv.width,canv.height)
+    bowls.forEach(b=>{
+        drawBowl(b[0],b[1],b[2],b[2])
+    })
+    grains+=Math.round(50*upgs.mult)
+}
 canv.addEventListener("click", (e)=>{
     if (cbowl !== undefined){
-        bowls.splice(cbowl,1)
-        addBowl()
-        ctx.clearRect(0,0,canv.width,canv.height)
-        bowls.forEach(b=>{
-            drawBowl(b[0],b[1],b[2],b[2])
-        })
-        
-        score+=5*upgs.mult
-        ctx.fillText("Score: "+score, 10, 50)
+        consumeBowl(cbowl)
     }
 })
 document.getElementById("multiplier").addEventListener("click", ()=>{
@@ -157,32 +169,30 @@ document.getElementById("autoclicker").addEventListener("click", ()=>{
     if (score >= 200 && !upgs.autoclicker){
         upgs.autoclicker = true
         score-=200
-        ctx.clearRect(0,0,canv.width,canv.height)
-        bowls.forEach(b=>{
-            drawBowl(b[0],b[1],b[2],b[2])
-        })
-        ctx.fillText("Score: "+score, 10, 50)
         setInterval(()=>{
             if (cbowl !== undefined){
-                bowls.splice(cbowl,1)
-                const x = Math.random()*(sz.width-300)
-                const y = Math.random()*sz.height
-                const syz = Math.random()+1
-                drawBowl(x,y,syz,syz)
-                bowls.push([x,y,syz])
-                ctx.clearRect(0,0,canv.width,canv.height)
-                bowls.forEach(b=>{
-                    drawBowl(b[0],b[1],b[2],b[2])
-                })
-                
-                score+=5*upgs.mult
-                ctx.fillText("Score: "+score, 10, 50)
+                consumeBowl(cbowl)
             }
         },20)
     }
 })
-
+setInterval(()=>{
+    if (grains <= 0) return
+    grains--
+    document.getElementById("total").innerText = grains
+    score +=people[0].reward
+    score = Math.round(score*100)/100
+    ctx.fillText("Score: "+score, 10, 50)
+},1000/people[0].speed)
 function run(){
+    ctx.clearRect(0,0,canv.width,canv.height)
+    bowls.forEach(b=>{
+        drawBowl(b[0],b[1],b[2],b[2])
+    })
+    ctx.strokeStyle="black"
+    ctx.fillStyle="black"
+        ctx.fillText("Score: "+score, 10, 50)
+    document.getElementById("total").innerText = grains
     let bowl
     bowls.forEach((b,i)=>{
         //outputD(i)
