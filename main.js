@@ -54,7 +54,13 @@ function loadGameState() {
         upgs = gameState.upgs
         costs = gameState.costs
         people = gameState.people
-
+        if (upgs.autoclicker){
+            setInterval(()=>{
+                if (cbowl !== undefined){
+                    consumeBowl(cbowl)
+                }
+            },20)
+        }
         return true
     }
     return false
