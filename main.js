@@ -11,7 +11,7 @@ ctx.font = "40px Verdana"
 let bowls = []
 let mx,my
 let cbowl
-let score = 0
+let score = 500
 let upgs = {
     autoclicker: false,
     mult: 1
@@ -32,6 +32,44 @@ let people = [
     }
 ]
 let grains = 0
+
+// Save/Load functions
+function saveGameState() {
+    const gameState = {
+        score,
+        grains,
+        upgs,
+        costs,
+        people
+    }
+    localStorage.setItem('chickenNuggetsGame', JSON.stringify(gameState))
+}
+
+function loadGameState() {
+    const saved = localStorage.getItem('chickenNuggetsGame')
+    if (saved) {
+        const gameState = JSON.parse(saved)
+        score = gameState.score
+        grains = gameState.grains
+        upgs = gameState.upgs
+        costs = gameState.costs
+        people = gameState.people
+        return true
+    }
+    return false
+}
+
+// Load game state on startup
+if (!loadGameState()) {
+    // First time or no save - initialize defaults
+}
+
+// Autosave every 5 seconds
+setInterval(saveGameState, 5000)
+
+// Save on page exit
+window.addEventListener('beforeunload', saveGameState)
+
 ctx.fillText("<--Rice bowl", 220, 120, 500)
 function drawGrain(x,y,rot){
     ctx.fillStyle="white"
@@ -97,13 +135,16 @@ canv.addEventListener("mousemove", (e)=>{
     my=e.clientY
 })
 function consumeBowl(bowln){
+    const sz = bowls[bowln][2]
     bowls.splice(bowln,1)
     addBowl()
     ctx.clearRect(0,0,canv.width,canv.height)
     bowls.forEach(b=>{
         drawBowl(b[0],b[1],b[2],b[2])
     })
-    grains+=Math.round(50*upgs.mult)
+    grains+=Math.round(50*upgs.mult*sz*0.66)
+    lastGrainConsumptionTime = performance.now()
+    grainAccumulator = 0
 }
 canv.addEventListener("click", (e)=>{
     if (cbowl !== undefined){
@@ -176,14 +217,26 @@ document.getElementById("autoclicker").addEventListener("click", ()=>{
         },20)
     }
 })
-setInterval(()=>{
-    if (grains <= 0) return
-    grains--
-    document.getElementById("total").innerText = grains
-    score +=people[0].reward
-    score = Math.round(score*100)/100
-    ctx.fillText("Score: "+score, 10, 50)
-},1000/people[0].speed)
+
+let lastGrainConsumptionTime = performance.now()
+let grainAccumulator = 0
+document.getElementById("buy1").addEventListener("click", ()=>{
+    if (score >= 500){
+        score-=500
+        people.push({
+            speed: 50,
+            upg: 0,
+            cost: 200,
+            reward: 0.1,
+            rupg: 0,
+            rcost: 200
+        })
+        let newli = document.createElement("li")
+        document.getElementById("buy1").parentNode.insertBefore(newli, document.getElementById("buy1").nextSibling)
+        newli.innerText = "Person ("+people[people.length-1].reward+" pts/s) - Upgrade ("+people[people.length-1].rcost+" pts)"
+        
+    }
+})
 function run(){
     ctx.clearRect(0,0,canv.width,canv.height)
     bowls.forEach(b=>{
@@ -191,8 +244,31 @@ function run(){
     })
     ctx.strokeStyle="black"
     ctx.fillStyle="black"
-        ctx.fillText("Score: "+score, 10, 50)
+    ctx.fillText("Score: "+score, 10, 50)
+    
+    // Consume grains based on elapsed time from all people
+    if (grains > 0) {
+        const now = performance.now()
+        const elapsedMs = now - lastGrainConsumptionTime
+        // Sum up speeds from all people (consumption rate)
+        const totalSpeed = people.reduce((sum, p) => sum + p.speed, 0)
+        const grainConsumptionRate = totalSpeed / 1000 // grains per ms
+        grainAccumulator += elapsedMs * grainConsumptionRate
+        
+        if (grainAccumulator >= 1) {
+            const grainsConsumed = Math.min(Math.floor(grainAccumulator), grains)
+            grains -= grainsConsumed
+            grainAccumulator -= grainsConsumed
+            score += people[0].reward * grainsConsumed
+            score = Math.round(score*100)/100
+            lastGrainConsumptionTime = now
+        }
+    }
+    const totalSpeed = people.reduce((sum, p) => sum + p.speed, 0)
+    const grainsPerSec = totalSpeed
+    ctx.fillText("Grains/sec (max): " + grainsPerSec.toFixed(1), 10, 100)
     document.getElementById("total").innerText = grains
+    
     let bowl
     bowls.forEach((b,i)=>{
         //outputD(i)
