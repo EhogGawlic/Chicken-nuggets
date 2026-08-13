@@ -358,6 +358,32 @@ document.getElementById("buy8").addEventListener("click", ()=>{
         })
     }
 })
+document.getElementById("buy9").addEventListener("click", ()=>{
+    if (score >= 100000000000){
+        score-=100000000000
+        people.push({
+            speed: 1000000000,
+            upg: 0,
+            cost: 200,
+            reward: 100000,
+            rupg: 0,
+            rcost: 200
+        })
+    }
+})
+document.getElementById("buy10").addEventListener("click", ()=>{
+    if (score >= 1000000000000){
+        score-=1000000000000
+        people.push({
+            speed: 10000000000,
+            upg: 0,
+            cost: 200,
+            reward: 100000,
+            rupg: 0,
+            rcost: 200
+        })
+    }
+})
 document.getElementById("sell").addEventListener("click", ()=>{
     people.shift()
     score+=500
