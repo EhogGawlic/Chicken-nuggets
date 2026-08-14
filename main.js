@@ -100,7 +100,7 @@ let people = [
 let grains = 0;
 const spds = [
   50, 100, 200, 500, 10000, 100000, 1000000, 10000000, 1000000000, 10000000000,
-  5000000000000000, 2500000000000000000,
+  5000000000000000, 25000000000000000,
 ];
 let sbowlamt = 5;
 // Save/Load functions
@@ -541,6 +541,10 @@ document.getElementById("buy12").addEventListener("click", () => {
 });
 document.getElementById("sell").addEventListener("click", () => {
   const person = people.shift();
+  const pid = spds.indexOf(person.speed)
+    document.getElementById("amtppl" + pid).innerText =
+      parseFloat(document.getElementById("amtppl" + pid).innerText) + 1;
+  
   score += 500;
 });
 function run() {
