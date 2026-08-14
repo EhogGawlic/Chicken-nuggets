@@ -1,3 +1,4 @@
+const formatter = new Intl.NumberFormat('en', { notation: 'compact' })
 /**
  * @type {HTMLCanvasElement} canv
  */
@@ -15,7 +16,8 @@ let score = 500
 let upgs = {
     autoclicker: false,
     mult: 1,
-    vaccum: false
+    vaccum: false,
+    bowls: 5
 }
 let costs = {
     autoclicker: 200,
@@ -33,7 +35,11 @@ let people = [
     }
 ]
 let grains = 0
-
+const spds = [
+  50, 100, 200, 500, 10000, 100000, 1000000, 10000000, 1000000000, 10000000000,
+  50000000000000, 25000000000000000
+];
+let sbowlamt = 5
 // Save/Load functions
 function saveGameState() {
     const gameState = {
@@ -62,6 +68,17 @@ function loadGameState() {
                 }
             },20)
         }
+        upgs.bowls = Math.max(upgs.bowls, sbowlamt)
+        for (let i = 0; i < people.length; i++){
+            const person = people[i]
+            const type = spds.indexOf(person.speed) + 1
+            if (type) {
+                document.getElementById("amtppl" + type).innerText = parseFloat(
+                    document.getElementById("amtppl" + type).innerText,
+                ) + 1;
+            }
+        }
+        sbowlamt = upgs.bowls
         return true
     }
     return false
@@ -149,9 +166,10 @@ function addBowl(){
     const syz = Math.random()+1
     drawBowl(x,y,syz,syz)
     bowls.push([x,y,syz])
+    upgs.bowls += 1
 }
 
-for (let i = 0; i < 5; i++){
+for (let i = 0; i < sbowlamt; i++){
     addBowl()
 }
 canv.addEventListener("mousemove", (e)=>{
@@ -179,7 +197,7 @@ function consumeBowl(bowln){
     popup.className = 'collect-popup'
     popup.style.left = (b[0]) + 'px'
     popup.style.top = (b[1] - b[2]*12) + 'px'
-    popup.innerText = '+' + amount
+    popup.innerText = '+' + formatter.format(amount)
     document.body.appendChild(popup)
     // remove the popup after animation finishes
     setTimeout(()=>{ if (popup && popup.parentNode) popup.parentNode.removeChild(popup) }, 1000)
@@ -194,12 +212,12 @@ document.getElementById("multiplier").addEventListener("click", ()=>{
         upgs.mult *= 1.5
         score-=costs.mult
         costs.mult = Math.round(300*upgs.mult*1.1)
-        document.getElementById("multiplier").innerText = "multiplier ("+costs.mult.toFixed(0)+" pts)"
+        document.getElementById("multiplier").innerText = "multiplier ("+formatter.format(costs.mult.toFixed(0))+" pts)"
         ctx.clearRect(0,0,canv.width,canv.height)
         bowls.forEach(b=>{
             drawBowl(b[0],b[1],b[2],b[2])
         })
-        ctx.fillText("Score: "+score, 10, 50)
+        ctx.fillText("Score: "+formatter.format(score), 10, 50)
     }
 })
 document.getElementById("abowl").addEventListener("click", ()=>{
@@ -215,8 +233,8 @@ document.getElementById("abowl").addEventListener("click", ()=>{
         bowls.forEach(b=>{
             drawBowl(b[0],b[1],b[2],b[2])
         })
-        ctx.fillText("Score: "+score, 10, 50)
-        document.getElementById("abowl").innerText = "add bowl ("+costs.bowls.toFixed(0)+" pts)"
+        ctx.fillText("Score: "+ formatter.format(score), 10, 50)
+        document.getElementById("abowl").innerText = "add bowl ("+formatter.format(costs.bowls.toFixed(0))+" pts)"
     }
 })
 document.getElementById("aapbowl").addEventListener("click", ()=>{
@@ -230,7 +248,7 @@ document.getElementById("aapbowl").addEventListener("click", ()=>{
         bowls.push([x,y,syz])
     }
     // simple redraw handled by main loop; update button text
-    document.getElementById("abowl").innerText = "add bowl ("+costs.bowls.toFixed(0)+" pts)"
+    document.getElementById("abowl").innerText = "add bowl ("+formatter.format(costs.bowls.toFixed(0))+" pts)"
 })
 function outputD(t){
     outdiv.innerText+=t+"\n"
@@ -265,6 +283,9 @@ document.getElementById("buy1").addEventListener("click", ()=>{
             rupg: 0,
             rcost: 200
         })
+    let n = 1;
+    document.getElementById("amtppl" + n).innerText =
+      parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
     }
 })
 document.getElementById("buy2").addEventListener("click", ()=>{
@@ -278,6 +299,9 @@ document.getElementById("buy2").addEventListener("click", ()=>{
             rupg: 0,
             rcost: 200
         })
+    let n = 2;
+    document.getElementById("amtppl" + n).innerText =
+      parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
     }
 })
 document.getElementById("buy3").addEventListener("click", ()=>{
@@ -291,6 +315,10 @@ document.getElementById("buy3").addEventListener("click", ()=>{
             rupg: 0,
             rcost: 200
         })
+    
+    let n = 3;
+    document.getElementById("amtppl" + n).innerText =
+      parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
     }
 })
 document.getElementById("buy4").addEventListener("click", ()=>{
@@ -304,6 +332,10 @@ document.getElementById("buy4").addEventListener("click", ()=>{
             rupg: 0,
             rcost: 200
         })
+    
+    let n = 4;
+    document.getElementById("amtppl" + n).innerText =
+      parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
     }
 })
 document.getElementById("buy5").addEventListener("click", ()=>{
@@ -317,6 +349,10 @@ document.getElementById("buy5").addEventListener("click", ()=>{
             rupg: 0,
             rcost: 200
         })
+    
+    let n = 5;
+    document.getElementById("amtppl" + n).innerText =
+      parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
     }
 })
 document.getElementById("buy6").addEventListener("click", ()=>{
@@ -330,6 +366,10 @@ document.getElementById("buy6").addEventListener("click", ()=>{
             rupg: 0,
             rcost: 200
         })
+    
+    let n = 6;
+    document.getElementById("amtppl" + n).innerText =
+      parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
     }
 })
 document.getElementById("buy7").addEventListener("click", ()=>{
@@ -343,6 +383,11 @@ document.getElementById("buy7").addEventListener("click", ()=>{
             rupg: 0,
             rcost: 200
         })
+    
+    
+    let n = 7;
+    document.getElementById("amtppl" + n).innerText =
+      parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
     }
 })
 document.getElementById("buy8").addEventListener("click", ()=>{
@@ -356,6 +401,10 @@ document.getElementById("buy8").addEventListener("click", ()=>{
             rupg: 0,
             rcost: 200
         })
+    
+    let n = 8;
+    document.getElementById("amtppl" + n).innerText =
+      parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
     }
 })
 document.getElementById("buy9").addEventListener("click", ()=>{
@@ -369,6 +418,10 @@ document.getElementById("buy9").addEventListener("click", ()=>{
             rupg: 0,
             rcost: 200
         })
+    
+    let n = 9;
+    document.getElementById("amtppl" + n).innerText =
+      parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
     }
 })
 document.getElementById("buy10").addEventListener("click", ()=>{
@@ -382,19 +435,10 @@ document.getElementById("buy10").addEventListener("click", ()=>{
             rupg: 0,
             rcost: 200
         })
-    }
-})
-document.getElementById("buy10").addEventListener("click", ()=>{
-    if (score >= 1000000000000){
-        score-=1000000000000
-        people.push({
-            speed: 10000000000,
-            upg: 0,
-            cost: 200,
-            reward: 100000,
-            rupg: 0,
-            rcost: 200
-        })
+    
+    let n = 10;
+    document.getElementById("amtppl" + n).innerText =
+      parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
     }
 })
 document.getElementById("buy11").addEventListener("click", ()=>{
@@ -408,15 +452,33 @@ document.getElementById("buy11").addEventListener("click", ()=>{
             rupg: 0,
             rcost: 200
         })
+    
+    let n = 11;
+    document.getElementById("amtppl" + n).innerText =
+      parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
     }
 })
+document.getElementById("buy11").addEventListener("click", () => {
+  if (score >= 1000000000000000000) {
+    score -= 1000000000000000000;
+    people.push({
+      speed: 25000000000000000,
+      upg: 0,
+      cost: 200,
+      reward: 10000000,
+      rupg: 0,
+      rcost: 200,
+    });
+
+    let n = 12;
+    document.getElementById("amtppl" + n).innerText =
+      parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
+  }
+});
 document.getElementById("sell").addEventListener("click", ()=>{
-    people.shift()
+    
+    const person = people.shift()
     score+=500
-     let list = document.querySelectorAll("#buy1 ~ li")
-     if (list.length > 0){
-        list[0].remove()
-     }    
 })
 function run(){
     ctx.clearRect(0,0,canv.width,canv.height)
@@ -449,7 +511,7 @@ function run(){
     }
     ctx.strokeStyle="black"
     ctx.fillStyle="black"
-    ctx.fillText("Score: "+score, 10, 50)
+    ctx.fillText("Score: "+formatter.format(score), 10, 50)
     
     // Consume grains based on elapsed time from all people
     if (grains > 0) {
@@ -471,8 +533,8 @@ function run(){
     }
     const totalSpeed = people.reduce((sum, p) => sum + p.speed, 0)
     const grainsPerSec = totalSpeed
-    ctx.fillText("Grains/sec (max): " + grainsPerSec.toFixed(1), 10, 100)
-    document.getElementById("total").innerText = grains
+    ctx.fillText("Grains/sec (max): " + formatter.format(grainsPerSec.toFixed(1)), 10, 100)
+    document.getElementById("total").innerText = formatter.format(grains)
     
     let bowl
     bowls.forEach((b,i)=>{
