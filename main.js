@@ -100,7 +100,7 @@ let people = [
 let grains = 0;
 const spds = [
   50, 100, 200, 500, 10000, 100000, 1000000, 10000000, 1000000000, 10000000000,
-  50000000000000, 2500000000000000000,
+  5000000000000000, 2500000000000000000,
 ];
 let sbowlamt = 5;
 // Save/Load functions
@@ -522,7 +522,7 @@ document.getElementById("buy11").addEventListener("click", () => {
       parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
   }
 });
-document.getElementById("buy11").addEventListener("click", () => {
+document.getElementById("buy12").addEventListener("click", () => {
   if (score >= 1000000000000000000) {
     score -= 1000000000000000000;
     people.push({
