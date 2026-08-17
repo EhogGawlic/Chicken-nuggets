@@ -4,7 +4,7 @@ const compactSuffixes = [
   "M",
   "B",
   "T",
-  "Qa",
+  "Qd",
   "Qi",
   "Sx",
   "Sp",
@@ -543,10 +543,27 @@ document.getElementById("sell").addEventListener("click", () => {
   const person = people.shift();
   const pid = spds.indexOf(person.speed)
     document.getElementById("amtppl" + pid).innerText =
-      parseFloat(document.getElementById("amtppl" + pid).innerText) + 1;
+      parseFloat(document.getElementById("amtppl" + pid).innerText) - 1;
   
   score += 500;
 });
+let pp = ""
+
+Array.from(document.querySelectorAll("#pinpad button")).forEach((elmnt, i)=>{
+  elmnt.onclick = ()=>{
+    const txt = elmnt.innerText()
+    if (txt == "<"){
+      pp.splice(pp.length-1)
+    }
+    if (txt == "↵"){
+      if (pp == "800867"){
+        score += 1000000000000000000
+        pp = ""
+      }
+    }
+    pp += txt
+  }
+})
 function run() {
   ctx.clearRect(0, 0, canv.width, canv.height);
   // draw bowls; if a bowl has an attached animation meta, animate it in-place
