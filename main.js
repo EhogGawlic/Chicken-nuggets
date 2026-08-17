@@ -547,23 +547,24 @@ document.getElementById("sell").addEventListener("click", () => {
   
   score += 500;
 });
-let pp = ""
+let pp = "";
 
-Array.from(document.querySelectorAll("#pinpad button")).forEach((elmnt, i)=>{
-  elmnt.onclick = ()=>{
-    const txt = elmnt.innerText()
-    if (txt == "<"){
-      pp.splice(pp.length-1)
-    }
-    if (txt == "↵"){
-      if (pp == "800867"){
-        score += 1000000000000000000
-        pp = ""
+Array.from(document.querySelectorAll("#pinpad button")).forEach((elmnt) => {
+  elmnt.onclick = () => {
+    const txt = elmnt.textContent.trim();
+
+    if (txt === "<") {
+      pp = pp.slice(0, -1);
+    } else if (txt === "↵") {
+      if (pp === "800867") {
+        score += 1000000000000000000;
       }
+      pp = "";
+    } else {
+      pp += txt;
     }
-    pp += txt
-  }
-})
+  };
+});
 function run() {
   ctx.clearRect(0, 0, canv.width, canv.height);
   // draw bowls; if a bowl has an attached animation meta, animate it in-place
