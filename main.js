@@ -551,12 +551,12 @@ document.getElementById("buy13").addEventListener("click", () => {
       rcost: 200,
     });
 
-    let n = 12;
+    let n = 13;
     document.getElementById("amtppl" + n).innerText =
       parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
   }
 });
-document.getElementById("buy13").addEventListener("click", () => {
+document.getElementById("buy14").addEventListener("click", () => {
   if (score >= 100000000000000000000000000000) {
     score -= 100000000000000000000000000000;
     people.push({
@@ -568,7 +568,7 @@ document.getElementById("buy13").addEventListener("click", () => {
       rcost: 200,
     });
 
-    let n = 12;
+    let n = 14;
     document.getElementById("amtppl" + n).innerText =
       parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
   }
