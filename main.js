@@ -140,7 +140,7 @@ function loadGameState() {
           parseFloat(document.getElementById("amtppl" + type).innerText) + 1;
       }
     }
-    sbowlamt = upgs.bowls;
+    sbowlamt = Math.min(100,upgs.bowls);
     return true;
   }
   return false;
@@ -557,7 +557,7 @@ Array.from(document.querySelectorAll("#pinpad button")).forEach((elmnt) => {
       pp = pp.slice(0, -1);
     } else if (txt === "↵") {
       if (pp === "800867") {
-        score += 1000000000000000000;
+        score += 100000000000000000000000000;
       }
       pp = "";
     } else {
