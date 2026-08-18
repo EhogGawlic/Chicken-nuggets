@@ -557,8 +557,8 @@ document.getElementById("buy13").addEventListener("click", () => {
   }
 });
 document.getElementById("buy13").addEventListener("click", () => {
-  if (score >= 1000000000000000000000000000000) {
-    score -= 1000000000000000000000000000000;
+  if (score >= 100000000000000000000000000000) {
+    score -= 100000000000000000000000000000;
     people.push({
       speed: 1000000000000000000000000000000000000000000000000000000,
       upg: 0,
