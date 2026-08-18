@@ -539,6 +539,40 @@ document.getElementById("buy12").addEventListener("click", () => {
       parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
   }
 });
+document.getElementById("buy13").addEventListener("click", () => {
+  if (score >= 10000000000000000000000000) {
+    score -= 10000000000000000000000000;
+    people.push({
+      speed: 1000000000000000000000000000,
+      upg: 0,
+      cost: 200,
+      reward: 10000000,
+      rupg: 0,
+      rcost: 200,
+    });
+
+    let n = 12;
+    document.getElementById("amtppl" + n).innerText =
+      parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
+  }
+});
+document.getElementById("buy13").addEventListener("click", () => {
+  if (score >= 1000000000000000000000000000000) {
+    score -= 1000000000000000000000000000000;
+    people.push({
+      speed: 1000000000000000000000000000000000000000000000000000000,
+      upg: 0,
+      cost: 200,
+      reward: 10000000,
+      rupg: 0,
+      rcost: 200,
+    });
+
+    let n = 12;
+    document.getElementById("amtppl" + n).innerText =
+      parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
+  }
+});
 document.getElementById("sell").addEventListener("click", () => {
   const person = people.shift();
   const pid = spds.indexOf(person.speed)
