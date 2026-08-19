@@ -636,7 +636,7 @@ document.getElementById("buy15").addEventListener("click", () => {
   }
 });
 function rebirth() {
-  if (score >= 1e72) {
+  if (score >= 1e72*(upgs.rbirth+1)) {
     const rebirthScore = score;
     upgs.autoclicker = false;
     upgs.mult = 1;
@@ -661,7 +661,7 @@ function rebirth() {
       },
     ];
     upgs.rbirth += 1;
-    upgs.rbirthpts += rebirthScore / 1e71;
+    upgs.rbirthpts += rebirthScore / 1e71*(upgs.rbirth+1);
     saveGameState();
     location.reload();
   }
@@ -671,6 +671,7 @@ document.getElementById("rebirthbtn").addEventListener("click", () => {
     <h2>Are you SURE you want to rebirth?</h2>
     <p>This will clear your save, but it will give you rebirth bonuses (x2 score multiplier for first rebirth, then adds +x1 score multiplier per rebirth) and rebirth points, which will have functionality later.</p>
     <p>U sure?</p>
+    <p>Note: will cost ${1e72*(upgs.rbirth+1)} points to rebirth, and you will lose all your progress.</p>
     <p>p.s clear save clears your rebirths so dont click that</p><br>
     <button onclick="rebirth();this.parentElement.style.display='none';">Yes</button>
     <button onclick="this.parentElement.style.display='none';">Cancel</button>
