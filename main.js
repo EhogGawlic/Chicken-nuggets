@@ -199,6 +199,7 @@ function clearSave() {
     <button onclick="clearTheSave();this.parentElement.style.display='none';">Yes</button>
     <button onclick="this.parentElement.style.display='none';">Cancel</button>
   `;
+  document.getElementById("dialog").style.display = "block";
 }
 
 ctx.fillText("<--Rice bowl", 220, 120, 500);
@@ -635,7 +636,7 @@ document.getElementById("buy15").addEventListener("click", () => {
   }
 });
 function rebirth() {
-  if (score >= 1e65) {
+  if (score >= 1e72) {
     const rebirthScore = score;
     upgs.autoclicker = false;
     upgs.mult = 1;
@@ -660,7 +661,7 @@ function rebirth() {
       },
     ];
     upgs.rbirth += 1;
-    upgs.rbirthpts += rebirthScore / 1e64;
+    upgs.rbirthpts += rebirthScore / 1e71;
     saveGameState();
     location.reload();
   }
@@ -674,6 +675,7 @@ document.getElementById("rebirthbtn").addEventListener("click", () => {
     <button onclick="rebirth();this.parentElement.style.display='none';">Yes</button>
     <button onclick="this.parentElement.style.display='none';">Cancel</button>
   `;
+  document.getElementById("dialog").style.display = "block";
 });
 document.getElementById("sell").addEventListener("click", () => {
   const person = people.pop();
