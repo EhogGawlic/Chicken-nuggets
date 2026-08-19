@@ -81,6 +81,8 @@ let upgs = {
   mult: 1,
   vaccum: false,
   bowls: 5,
+  rbirth: 0,
+  rbirthpts: 0
 };
 let costs = {
   autoclicker: 200,
@@ -164,8 +166,8 @@ window.addEventListener("beforeunload", (event) => {
     saveGameState();
   }
 });
-
-function clearSave() {
+function clearTheSave(){
+  
   skipSaveOnUnload = true;
   clearInterval(saveIntervalId);
   localStorage.removeItem("TheRice");
@@ -173,6 +175,15 @@ function clearSave() {
     alert("Save cleared! Refreshing the page...");
     location.reload();
   }, 1000);
+}
+function clearSave() {
+  document.getElementById("dialog").innerHTML = `
+    <h2>Are you SURE you want to clear your save?</h2>
+    <p>This will reset your progress, including rebirths. This action cannot be undone.</p>
+    <p>U sure?</p>
+    <button onclick="clearTheSave();this.parentElement.style.display='none';">Yes</button>
+    <button onclick="this.parentElement.style.display='none';">Cancel</button>
+  `;
 }
 
 ctx.fillText("<--Rice bowl", 220, 120, 500);
@@ -594,6 +605,30 @@ document.getElementById("buy15").addEventListener("click", () => {
       parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
   }
 });
+function rebirth(){
+  
+  if (score >= 1e65) {
+    upgs.autoclicker = false;
+    upgs.mult = 1;
+    upgs.vaccum = false;
+    upgs.bowls = 5;
+    bowls = [];
+    upgs.rbirth += 1;
+    upgs.rbirthpts += score / 1e64; //wow idk how the computer uses this but ok (this is more than 2^64!!! javascript is better than c++)
+    saveGameState();
+    location.reload();
+  }
+}
+document.getElementById("rebirthbtn").addEventListener("click", () => {
+  document.getElementById("dialog").innerHTML = `
+    <h2>Are you SURE you want to rebirth?</h2>
+    <p>This will clear your save, but it will give you rebirth bonuses (x2 score multiplier for first rebirth, then adds +x1 score multiplier per rebirth) and rebirth points, which will have functionality later.</p>
+    <p>U sure?</p>
+    <p>p.s clear save clears your rebirths so dont click that</p><br>
+    <button onclick="rebirth();this.parentElement.style.display='none';">Yes</button>
+    <button onclick="this.parentElement.style.display='none';">Cancel</button>
+  `
+});
 document.getElementById("sell").addEventListener("click", () => {
   const person = people.shift();
   const pid = spds.indexOf(person.speed)
@@ -667,7 +702,7 @@ function run() {
       grains -= grainsConsumed;
       grainAccumulator -= grainsConsumed;
       score += people[0].reward * grainsConsumed;
-      score = Math.round(score * 100) / 100;
+      score = Math.round(score * 100) / 100 * (upgs.rebirth+1);
       lastGrainConsumptionTime = now;
     }
   }
