@@ -630,7 +630,7 @@ document.getElementById("buy15").addEventListener("click", () => {
       rcost: 200,
     });
 
-    let n = 14;
+    let n = 15;
     document.getElementById("amtppl" + n).innerText =
       parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
   }
