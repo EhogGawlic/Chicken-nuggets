@@ -756,8 +756,8 @@ function run() {
         (sum, person) => sum + person.speed * person.reward,
         0,
       );
-      score += (rewardRate / totalSpeed) * grainsConsumed;
-      score = (Math.round(score * 100) / 100) * (upgs.rbirth + 1);
+      score += (rewardRate / totalSpeed) * grainsConsumed * (upgs.rbirth + 1);
+      score = (Math.round(score * 100) / 100);
       lastGrainConsumptionTime = now;
     }
   }
