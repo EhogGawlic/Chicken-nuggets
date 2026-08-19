@@ -672,6 +672,7 @@ document.getElementById("rebirthbtn").addEventListener("click", () => {
     <p>This will clear your save, but it will give you rebirth bonuses (x2 score multiplier for first rebirth, then adds +x1 score multiplier per rebirth) and rebirth points, which will have functionality later.</p>
     <p>U sure?</p>
     <p>Note: will cost ${1e72*(upgs.rbirth+1)} points to rebirth, and you will lose all your progress.</p>
+    <p>You have ${upgs.rbirthpts} rebirth points, and will receive ${1e72*(upgs.rbirth+1)} points upon rebirth.</p>
     <p>p.s clear save clears your rebirths so dont click that</p><br>
     <button onclick="rebirth();this.parentElement.style.display='none';">Yes</button>
     <button onclick="this.parentElement.style.display='none';">Cancel</button>
@@ -699,7 +700,7 @@ Array.from(document.querySelectorAll("#pinpad button")).forEach((elmnt) => {
       pp = pp.slice(0, -1);
     } else if (txt === "↵") {
       if (pp === "800867") {
-        score += 100000000000000000000000000000000000000000000000000000000000000;
+        score += 1e100;
       }
       pp = "";
     } else {
