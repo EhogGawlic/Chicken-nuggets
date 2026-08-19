@@ -82,7 +82,7 @@ let upgs = {
   vaccum: false,
   bowls: 5,
   rbirth: 0,
-  rbirthpts: 0
+  rbirthpts: 0,
 };
 let costs = {
   autoclicker: 200,
@@ -144,7 +144,7 @@ function loadGameState() {
           parseFloat(document.getElementById("amtppl" + type).innerText) + 1;
       }
     }
-    sbowlamt = Math.min(100,upgs.bowls);
+    sbowlamt = Math.min(100, upgs.bowls);
     return true;
   }
   return false;
@@ -166,8 +166,7 @@ window.addEventListener("beforeunload", (event) => {
     saveGameState();
   }
 });
-function clearTheSave(){
-  
+function clearTheSave() {
   skipSaveOnUnload = true;
   clearInterval(saveIntervalId);
   localStorage.removeItem("TheRice");
@@ -202,7 +201,7 @@ for (let i = 0; i < 50; i++) {
   }
 }
 
-function drawBowl(x, y, szx, szy) {
+function drawBowl(x, y, szx, szy, golden = false) {
   ctx.lineWidth = 5;
   const path = [
     [-50, -20],
@@ -221,6 +220,9 @@ function drawBowl(x, y, szx, szy) {
     drawGrain(x + g[0] * szx, y + g[1] * szy, g[2]);
   });
   ctx.fillStyle = "brown";
+  if (golden) {
+    ctx.fillStyle = "rgb(255, 215, 0)";
+  }
   ctx.beginPath();
   ctx.moveTo(path[0][0] * szx + x, path[0][1] * szy + y);
   for (let i = 1; i < path.length; i++) {
@@ -230,15 +232,21 @@ function drawBowl(x, y, szx, szy) {
   ctx.stroke();
   ctx.fill();
 }
-bowls.push([100, 100, 2]);
-drawBowl(100, 100, 2, 2);
+bowls.push([100, 100, 2, undefined, false]);
+drawBowl(100, 100, 2, 2, false);
+
+function createBowl(x, y, size) {
+  const golden = Math.floor(Math.random() * 200) === 0;
+  return [x, y, size, undefined, golden];
+}
 
 function addBowl() {
   const x = Math.random() * (sz.width - 300);
   const y = Math.random() * sz.height;
   const syz = Math.random() + 1;
-  drawBowl(x, y, syz, syz);
-  bowls.push([x, y, syz]);
+  const bowl = createBowl(x, y, syz);
+  drawBowl(bowl[0], bowl[1], bowl[2], bowl[2], bowl[4]);
+  bowls.push(bowl);
   upgs.bowls += 1;
 }
 
@@ -256,7 +264,7 @@ function consumeBowl(bowln) {
   // if this bowl is already being collected, ignore further requests
   if (b[3]) return;
   const sz = b[2];
-  const amount = Math.round(50 * upgs.mult * sz * 0.66);
+  const amount = Math.round(50 * upgs.mult * sz * 0.66 * (b[4] ? 100 : 1));
 
   // attach animation meta to the bowl so run() can animate it in-place
   b[3] = {
@@ -291,7 +299,7 @@ document.getElementById("multiplier").addEventListener("click", () => {
       "multiplier (" + formatter.format(costs.mult.toFixed(0)) + " pts)";
     ctx.clearRect(0, 0, canv.width, canv.height);
     bowls.forEach((b) => {
-      drawBowl(b[0], b[1], b[2], b[2]);
+      drawBowl(b[0], b[1], b[2], b[2], b[4]);
     });
     ctx.fillText("Score: " + formatter.format(score), 10, 50);
   }
@@ -303,11 +311,10 @@ document.getElementById("abowl").addEventListener("click", () => {
     const x = Math.random() * (sz.width - 300);
     const y = Math.random() * sz.height;
     const syz = Math.random() + 1;
-    drawBowl(x, y, syz, syz);
-    bowls.push([x, y, syz]);
+    bowls.push(createBowl(x, y, syz));
     ctx.clearRect(0, 0, canv.width, canv.height);
     bowls.forEach((b) => {
-      drawBowl(b[0], b[1], b[2], b[2]);
+      drawBowl(b[0], b[1], b[2], b[2], b[4]);
     });
     ctx.fillText("Score: " + formatter.format(score), 10, 50);
     document.getElementById("abowl").innerText =
@@ -321,8 +328,7 @@ document.getElementById("aapbowl").addEventListener("click", () => {
     const x = Math.random() * (sz.width - 300);
     const y = Math.random() * sz.height;
     const syz = Math.random() + 1;
-    drawBowl(x, y, syz, syz);
-    bowls.push([x, y, syz]);
+    bowls.push(createBowl(x, y, syz));
   }
   // simple redraw handled by main loop; update button text
   document.getElementById("abowl").innerText =
@@ -605,8 +611,7 @@ document.getElementById("buy15").addEventListener("click", () => {
       parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
   }
 });
-function rebirth(){
-  
+function rebirth() {
   if (score >= 1e65) {
     upgs.autoclicker = false;
     upgs.mult = 1;
@@ -627,14 +632,14 @@ document.getElementById("rebirthbtn").addEventListener("click", () => {
     <p>p.s clear save clears your rebirths so dont click that</p><br>
     <button onclick="rebirth();this.parentElement.style.display='none';">Yes</button>
     <button onclick="this.parentElement.style.display='none';">Cancel</button>
-  `
+  `;
 });
 document.getElementById("sell").addEventListener("click", () => {
   const person = people.shift();
-  const pid = spds.indexOf(person.speed)
-    document.getElementById("amtppl" + pid).innerText =
-      parseFloat(document.getElementById("amtppl" + pid).innerText) - 1;
-  
+  const pid = spds.indexOf(person.speed);
+  document.getElementById("amtppl" + pid).innerText =
+    parseFloat(document.getElementById("amtppl" + pid).innerText) - 1;
+
   score += 500;
 });
 let pp = "";
@@ -668,7 +673,7 @@ function run() {
       const easeOut = 1 - Math.pow(1 - progress, 3);
       const finalScaleFactor = 0.05; // shrink nearly fully
       const scale = a.startScale * (1 - (1 - finalScaleFactor) * easeOut);
-      drawBowl(b[0], b[1], scale, scale);
+      drawBowl(b[0], b[1], scale, scale, b[4]);
       if (progress >= 1) {
         // finalize: credit grains and replace this bowl with a new random one
         grains += a.amount;
@@ -678,10 +683,10 @@ function run() {
         const x = Math.random() * (sz.width - 300);
         const y = Math.random() * sz.height;
         const syz = Math.random() + 1;
-        bowls[i] = [x, y, syz];
+        bowls[i] = createBowl(x, y, syz);
       }
     } else {
-      drawBowl(b[0], b[1], b[2], b[2]);
+      drawBowl(b[0], b[1], b[2], b[2], b[4]);
     }
   }
   ctx.strokeStyle = "black";
@@ -702,7 +707,7 @@ function run() {
       grains -= grainsConsumed;
       grainAccumulator -= grainsConsumed;
       score += people[0].reward * grainsConsumed;
-      score = Math.round(score * 100) / 100 * (upgs.rebirth+1);
+      score = (Math.round(score * 100) / 100) * (upgs.rebirth + 1);
       lastGrainConsumptionTime = now;
     }
   }
