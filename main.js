@@ -1,3 +1,4 @@
+try{
 const compactSuffixes = [
   "",
   "K",
@@ -91,7 +92,7 @@ let costs = {
 };
 let people = [
   {
-    speed: 150,
+    speed: 50,
     upg: 0,
     cost: 200,
     reward: 0.1,
@@ -106,7 +107,7 @@ const spds = [
   1000000000000000000000000000000000000000000000000000000,
   1000000000000000000000000000000000000000000000000000000000000000,
 ];
-let sbowlamt = 5;
+let sbowlamt = 4;
 // Save/Load functions
 function saveGameState() {
   const gameState = {
@@ -122,12 +123,27 @@ function saveGameState() {
 function loadGameState() {
   const saved = localStorage.getItem("TheRice");
   if (saved) {
-    const gameState = JSON.parse(saved);
-    score = gameState.score;
-    grains = gameState.grains;
-    upgs = gameState.upgs;
-    costs = gameState.costs;
-    people = gameState.people;
+    let gameState;
+    try {
+      gameState = JSON.parse(saved);
+    } catch {
+      localStorage.removeItem("TheRice");
+      return false;
+    }
+    score = typeof gameState.score === "number" && Number.isFinite(gameState.score)
+      ? gameState.score
+      : 500;
+    grains = typeof gameState.grains === "number" && Number.isFinite(gameState.grains)
+      ? gameState.grains
+      : 0;
+    upgs = { ...upgs, ...(gameState.upgs || {}) };
+    costs = { ...costs, ...(gameState.costs || {}) };
+    people = Array.isArray(gameState.people) && gameState.people.length
+      ? gameState.people
+      : people;
+    document.querySelectorAll('[id^="amtppl"]').forEach((element) => {
+      element.innerText = "0";
+    });
     if (upgs.autoclicker) {
       setInterval(() => {
         if (cbowl !== undefined) {
@@ -144,7 +160,7 @@ function loadGameState() {
           parseFloat(document.getElementById("amtppl" + type).innerText) + 1;
       }
     }
-    sbowlamt = Math.min(100, upgs.bowls);
+    sbowlamt = Math.min(100, Math.max(0, upgs.bowls - 1));
     return true;
   }
   return false;
@@ -247,7 +263,6 @@ function addBowl() {
   const bowl = createBowl(x, y, syz);
   drawBowl(bowl[0], bowl[1], bowl[2], bowl[2], bowl[4]);
   bowls.push(bowl);
-  upgs.bowls += 1;
 }
 
 for (let i = 0; i < sbowlamt; i++) {
@@ -312,6 +327,7 @@ document.getElementById("abowl").addEventListener("click", () => {
     const y = Math.random() * sz.height;
     const syz = Math.random() + 1;
     bowls.push(createBowl(x, y, syz));
+    upgs.bowls += 1;
     ctx.clearRect(0, 0, canv.width, canv.height);
     bowls.forEach((b) => {
       drawBowl(b[0], b[1], b[2], b[2], b[4]);
@@ -329,6 +345,7 @@ document.getElementById("aapbowl").addEventListener("click", () => {
     const y = Math.random() * sz.height;
     const syz = Math.random() + 1;
     bowls.push(createBowl(x, y, syz));
+    upgs.bowls += 1;
   }
   // simple redraw handled by main loop; update button text
   document.getElementById("abowl").innerText =
@@ -351,6 +368,12 @@ document.getElementById("autoclicker").addEventListener("click", () => {
         consumeBowl(cbowl);
       }
     }, 20);
+  }
+});
+document.getElementById("vaccum").addEventListener("click", () => {
+  if (score >= 10000 && !upgs.vaccum) {
+    score -= 10000;
+    upgs.vaccum = true;
   }
 });
 
@@ -613,13 +636,31 @@ document.getElementById("buy15").addEventListener("click", () => {
 });
 function rebirth() {
   if (score >= 1e65) {
+    const rebirthScore = score;
     upgs.autoclicker = false;
     upgs.mult = 1;
     upgs.vaccum = false;
     upgs.bowls = 5;
     bowls = [];
+    score = 500;
+    grains = 0;
+    costs = {
+      autoclicker: 200,
+      mult: 300,
+      bowls: 100,
+    };
+    people = [
+      {
+        speed: 50,
+        upg: 0,
+        cost: 200,
+        reward: 0.1,
+        rupg: 0,
+        rcost: 200,
+      },
+    ];
     upgs.rbirth += 1;
-    upgs.rbirthpts += score / 1e64; //wow idk how the computer uses this but ok (this is more than 2^64!!! javascript is better than c++)
+    upgs.rbirthpts += rebirthScore / 1e64;
     saveGameState();
     location.reload();
   }
@@ -635,10 +676,13 @@ document.getElementById("rebirthbtn").addEventListener("click", () => {
   `;
 });
 document.getElementById("sell").addEventListener("click", () => {
-  const person = people.shift();
-  const pid = spds.indexOf(person.speed);
-  document.getElementById("amtppl" + pid).innerText =
-    parseFloat(document.getElementById("amtppl" + pid).innerText) - 1;
+  const person = people.pop();
+  if (!person) return;
+  const pid = spds.indexOf(person.speed) + 1;
+  const count = document.getElementById("amtppl" + pid);
+  if (count) {
+    count.innerText = parseFloat(count.innerText) - 1;
+  }
 
   score += 500;
 });
@@ -706,8 +750,12 @@ function run() {
       const grainsConsumed = Math.min(Math.floor(grainAccumulator), grains);
       grains -= grainsConsumed;
       grainAccumulator -= grainsConsumed;
-      score += people[0].reward * grainsConsumed;
-      score = (Math.round(score * 100) / 100) * (upgs.rebirth + 1);
+      const rewardRate = people.reduce(
+        (sum, person) => sum + person.speed * person.reward,
+        0,
+      );
+      score += (rewardRate / totalSpeed) * grainsConsumed;
+      score = (Math.round(score * 100) / 100) * (upgs.rbirth + 1);
       lastGrainConsumptionTime = now;
     }
   }
@@ -749,3 +797,7 @@ function run() {
   requestAnimationFrame(run);
 }
 run();
+
+}catch(e){
+  alert(e)
+}
