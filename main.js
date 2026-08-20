@@ -671,7 +671,7 @@ document.getElementById("rebirthbtn").addEventListener("click", () => {
     <h2>Are you SURE you want to rebirth?</h2>
     <p>This will clear your save, but it will give you rebirth bonuses (x2 score multiplier for first rebirth, then adds +x1 score multiplier per rebirth) and rebirth points, which will have functionality later.</p>
     <p>U sure?</p>
-    <p>Note: will cost ${1e72*(upgs.rbirth+1)} points to rebirth, and you will lose all your progress.</p>
+    <p>Note: will cost ${1e72*(upgs.rbirth*0.25+1)} points to rebirth, and you will lose all your progress.</p>
     <p>You have ${upgs.rbirthpts} rebirth points, and will receive ${1e72*(upgs.rbirth+1)} points upon rebirth.</p>
     <p>p.s clear save clears your rebirths so dont click that</p><br>
     <button onclick="rebirth();this.parentElement.style.display='none';">Yes</button>
@@ -701,6 +701,9 @@ Array.from(document.querySelectorAll("#pinpad button")).forEach((elmnt) => {
     } else if (txt === "↵") {
       if (pp === "800867") {
         score += 1e100;
+      }
+      if (pp === "19472"){
+        score += 100000
       }
       pp = "";
     } else {
@@ -758,7 +761,7 @@ function run() {
         (sum, person) => sum + person.speed * person.reward,
         0,
       );
-      score += (rewardRate / totalSpeed) * grainsConsumed * (upgs.rbirth + 1);
+      score += (rewardRate / totalSpeed) * grainsConsumed * (upgs.rbirth*0.25 + 1);
       score = (Math.round(score * 100) / 100);
       lastGrainConsumptionTime = now;
     }
@@ -798,8 +801,15 @@ function run() {
       }
     });
   }
+  if (score >= 100000){
+    canv.style.backgroundColor = "gold";
+  }
+  if (score >= 1000000000000000000000){
+    canv.style.backgroundImage = "linear-gradient(135deg, red, orange, yellow, rgb(0, 255, 0), blue, violet)";
+  }
   requestAnimationFrame(run);
 }
+
 run();
 
 }catch(e){
