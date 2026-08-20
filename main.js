@@ -701,10 +701,12 @@ Array.from(document.querySelectorAll("#pinpad button")).forEach((elmnt) => {
     } else if (txt === "↵") {
       if (pp === "800867") {
         score += 1e100;
+        alert("stop abusing this")
       }
       if (pp === "19472"){
         score += 100000
       }
+
       pp = "";
     } else {
       pp += txt;
