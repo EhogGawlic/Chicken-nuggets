@@ -101,12 +101,13 @@ let people = [
   },
 ];
 let grains = 0;
+const waitWhatSpeed = 1e100;
 const spds = [
   50, 100, 200, 500, 10000, 100000, 1000000, 10000000, 1000000000, 10000000000,
   5000000000000000, 25000000000000000, 1000000000000000000000000000,
   1000000000000000000000000000000000000000000000000000000,
   1000000000000000000000000000000000000000000000000000000000000000,
-  Infinity
+  waitWhatSpeed
 ];
 let sbowlamt = 4;
 // Save/Load functions
@@ -140,7 +141,11 @@ function loadGameState() {
     upgs = { ...upgs, ...(gameState.upgs || {}) };
     costs = { ...costs, ...(gameState.costs || {}) };
     people = Array.isArray(gameState.people) && gameState.people.length
-      ? gameState.people
+      ? gameState.people.map((person) =>
+          person && person.speed === null
+            ? { ...person, speed: waitWhatSpeed }
+            : person,
+        )
       : people;
     document.querySelectorAll('[id^="amtppl"]').forEach((element) => {
       element.innerText = "0";
@@ -638,12 +643,11 @@ document.getElementById("buy15").addEventListener("click", () => {
 });
 
 document.getElementById("buy16").addEventListener("click", () => {
-  //cost: 50 NoD
-  //speed: 1 Vg
-  if (score >= 1e73) {
+  //cost: 100 qag
+  if (score >= 1e75) {
     score -= 1e73;
     people.push({
-      speed: Infinity,
+      speed: waitWhatSpeed,
       upg: 0,
       cost: 200,
       reward: 10000000,
