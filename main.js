@@ -37,7 +37,7 @@ const compactSuffixes = [
 const formatter = {
   format(value) {
     const num = Number(value);
-    if (!Number.isFinite(num)) return "0";
+    if (!Number.isFinite(num)) return "Infinity";
 
     const negative = num < 0;
     const abs = Math.abs(num);
@@ -59,7 +59,7 @@ const formatter = {
       minimumFractionDigits: decimals > 0 ? 1 : 0,
       maximumFractionDigits: decimals,
     });
-
+    
     return `${negative ? "-" : ""}${formatted}${compactSuffixes[suffixIndex]}`;
   },
 };
