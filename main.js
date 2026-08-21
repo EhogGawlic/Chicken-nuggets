@@ -106,6 +106,7 @@ const spds = [
   5000000000000000, 25000000000000000, 1000000000000000000000000000,
   1000000000000000000000000000000000000000000000000000000,
   1000000000000000000000000000000000000000000000000000000000000000,
+  Infinity
 ];
 let sbowlamt = 4;
 // Save/Load functions
@@ -631,6 +632,25 @@ document.getElementById("buy15").addEventListener("click", () => {
     });
 
     let n = 15;
+    document.getElementById("amtppl" + n).innerText =
+      parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
+  }
+});
+document.getElementById("buy16").addEventListener("click", () => {
+  //cost: 50 NoD
+  //speed: 1 Vg
+  if (score >= 1e73) {
+    score -= 1e73;
+    people.push({
+      speed: Infinity,
+      upg: 0,
+      cost: 200,
+      reward: 10000000,
+      rupg: 0,
+      rcost: 200,
+    });
+
+    let n = 16;
     document.getElementById("amtppl" + n).innerText =
       parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
   }
