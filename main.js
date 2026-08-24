@@ -650,7 +650,7 @@ document.getElementById("buy16").addEventListener("click", () => {
       speed: waitWhatSpeed,
       upg: 0,
       cost: 200,
-      reward: 1000,
+      reward: 10,
       rupg: 0,
       rcost: 200,
     });
