@@ -32,6 +32,12 @@ const compactSuffixes = [
   "Ocg",
   "Nog",
   "Dcg",
+  "UDcg",
+  "DDcg",
+  "TDcg",
+  "Qadcg",
+  "Qidcg",
+  
 ];
 
 const formatter = {
