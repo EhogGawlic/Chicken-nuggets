@@ -80,8 +80,8 @@ export async function handler(event) {
       console.error('Mongo connect error:', e);
       throw e;
     });
-    const dbName = rice;
-    const collName = leaderboard;
+    const dbName = process.env.MONGO_DB_NAME || 'rice';
+    const collName = process.env.MONGO_COLLECTION || 'leaderboard';
     const db = client.db(dbName);
     const col = db.collection(collName);
 
