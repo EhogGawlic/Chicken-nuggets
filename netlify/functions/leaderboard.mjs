@@ -111,9 +111,18 @@ export async function handler(event) {
         if (Number.isFinite(parsed)) numericScore = parsed;
       }
 
-      const doc = { name: String(name).slice(0, 64), score: numericScore, scoreText, createdAt: new Date() };
-      await col.insertOne(doc);
-      return { statusCode: 201, body: JSON.stringify({ ok: true }) };
+      const normalizedName = String(name).trim().slice(0, 64);
+      if (!normalizedName) return { statusCode: 400, body: 'invalid payload: missing name' };
+
+      await col.updateOne(
+        { name: normalizedName },
+        {
+          $set: { score: numericScore, scoreText },
+          $setOnInsert: { name: normalizedName, createdAt: new Date() },
+        },
+        { upsert: true },
+      );
+      return { statusCode: 200, body: JSON.stringify({ ok: true }) };
     }
 
 
