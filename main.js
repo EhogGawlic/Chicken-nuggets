@@ -850,6 +850,102 @@ function run() {
 
 run();
 
-}catch(e){
-  alert(e)
-}
+  // --- Leaderboard client integration ---
+  async function submitScore(name, scoreValue) {
+    try {
+      const payload = { name: String(name).slice(0, 64) };
+      if (typeof scoreValue === 'string') {
+        payload.scoreText = scoreValue;
+      } else if (typeof scoreValue === 'number' && Number.isFinite(scoreValue)) {
+        payload.score = Number(scoreValue);
+        payload.scoreText = String(scoreValue);
+      }
+      const res = await fetch('/.netlify/functions/leaderboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return res;
+    } catch (err) {
+      console.error('submitScore error', err);
+      throw err;
+    }
+  }
+
+  async function fetchLeaderboard(limit = 10) {
+    const res = await fetch(`/.netlify/functions/leaderboard?limit=${encodeURIComponent(limit)}`);
+    if (!res.ok) throw new Error('failed to fetch leaderboard');
+    return res.json();
+  }
+
+  function renderLeaderboard(list) {
+    const container = document.getElementById('leaderboard-list');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!Array.isArray(list) || list.length === 0) {
+      container.innerText = 'No scores yet.';
+      return;
+    }
+    const ol = document.createElement('ol');
+    list.forEach((item) => {
+      const li = document.createElement('li');
+      const name = item.name || 'Anon';
+      const display = item.scoreText ? item.scoreText : (typeof item.score === 'number' ? formatter.format(item.score) : '0');
+      li.innerText = `${name} — ${display}`;
+      ol.appendChild(li);
+    });
+    container.appendChild(ol);
+  }
+
+  // wire up UI
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('leaderboard-form');
+    const nameInput = document.getElementById('leaderboard-name');
+    const scoreInput = document.getElementById('leaderboard-score');
+    const submitCurrent = document.getElementById('leaderboard-submit-current');
+    const refreshBtn = document.getElementById('leaderboard-refresh');
+
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+          await submitScore(nameInput.value || 'Anon', Number(scoreInput.value) || 0);
+          scoreInput.value = '';
+          await refreshBtn.click();
+        } catch (err) {
+          alert('Failed to submit score');
+        }
+      });
+    }
+
+    if (submitCurrent) {
+      submitCurrent.addEventListener('click', async () => {
+        try {
+          const name = document.getElementById('leaderboard-name').value || 'Anon';
+          // use formatted score text to preserve large numbers
+          await submitScore(name, formatter.format(score));
+          await fetchLeaderboard(10).then(renderLeaderboard);
+        } catch (err) {
+          alert('Failed to submit current score');
+        }
+      });
+    }
+
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', async () => {
+        try {
+          const list = await fetchLeaderboard(10);
+          renderLeaderboard(list);
+        } catch (err) {
+          console.error(err);
+          document.getElementById('leaderboard-list').innerText = 'Error loading leaderboard';
+        }
+      });
+      // initial load
+      refreshBtn.click();
+    }
+  });
+
+  }catch(e){
+    alert(e)
+  }
