@@ -6,7 +6,7 @@ async function getClient() {
   const uri = process.env.MONGO_URI || process.env.MONGODB_KEY || process.env.MONGODB_URI;
   if (!uri) throw new Error('MONGO_URI / MONGODB_KEY not set');
   if (cachedClient) return cachedClient;
-  const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+  const client = new MongoClient(uri);
   await client.connect();
   cachedClient = client;
   return client;
@@ -80,8 +80,8 @@ export async function handler(event) {
       console.error('Mongo connect error:', e);
       throw e;
     });
-    const dbName = process.env.MONGO_DB_NAME;
-    const collName = process.env.MONGO_COLLECTION;
+    const dbName = rice;
+    const collName = leaderboard;
     const db = client.db(dbName);
     const col = db.collection(collName);
 

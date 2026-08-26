@@ -4,4 +4,3 @@ netlify/functions/node_modules/
 netlify/functions/.env
 node_modules/
 .env
-netlify/functions/.env
