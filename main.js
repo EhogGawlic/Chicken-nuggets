@@ -120,7 +120,7 @@ const spds = [
 ];
 let sbowlamt = 4;
 // Save/Load functions
-function saveGameState() {
+async function saveGameState() {
   const gameState = {
     score,
     grains,
@@ -129,6 +129,9 @@ function saveGameState() {
     people,
   };
   localStorage.setItem("TheRice", JSON.stringify(gameState));
+
+  const name = document.getElementById('leaderboard-name').value || 'Anon.';
+  await submitScore(name, formatter.format(score));
 }
 
 function loadGameState() {
@@ -740,6 +743,7 @@ let pp = "";
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+      localStorage.setItem("leaderName", String(name))
       return res;
     } catch (err) {
       console.error('submitScore error', err);
@@ -778,7 +782,8 @@ let pp = "";
     const nameInput = document.getElementById('leaderboard-name');
     const submitCurrent = document.getElementById('leaderboard-submit-current');
     const refreshBtn = document.getElementById('leaderboard-refresh');
-
+    const nameVal = localStorage.getItem("leadername")
+    document.getElementById('leaderboard-name').value = nameVal
     if (form) {
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -795,8 +800,7 @@ let pp = "";
     if (submitCurrent) {
       submitCurrent.addEventListener('click', async () => {
         try {
-          const name = document.getElementById('leaderboard-name').value || 'Anon';
-          // use formatted score text to preserve large numbers
+          const name = document.getElementById('leaderboard-name').value || 'Anon.';
           await submitScore(name, formatter.format(score));
           await fetchLeaderboard(10).then(renderLeaderboard);
         } catch (err) {
