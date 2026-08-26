@@ -776,7 +776,6 @@ let pp = "";
   document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('leaderboard-form');
     const nameInput = document.getElementById('leaderboard-name');
-    const scoreInput = document.getElementById('leaderboard-score');
     const submitCurrent = document.getElementById('leaderboard-submit-current');
     const refreshBtn = document.getElementById('leaderboard-refresh');
 
