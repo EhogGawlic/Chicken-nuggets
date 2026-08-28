@@ -99,7 +99,7 @@ let cbowl;
 let score = new Decimal(500);
 let upgs = {
   autoclicker: false,
-  mult: 1,
+  mult: new Decimal(1),
   vaccum: false,
   bowls: 5,
   rbirth: 0,
@@ -107,8 +107,8 @@ let upgs = {
 };
 let costs = {
   autoclicker: 200,
-  mult: 300,
-  bowls: 100,
+  mult: new Decimal(300),
+  bowls: new Decimal(100),
 };
 let people = [
   {
@@ -164,7 +164,10 @@ function loadGameState() {
       grains = new Decimal(0);
     }
     upgs = { ...upgs, ...(gameState.upgs || {}) };
+    upgs.mult = new Decimal(upgs.mult ?? 1);
     costs = { ...costs, ...(gameState.costs || {}) };
+    costs.mult = new Decimal(costs.mult ?? 300);
+    costs.bowls = new Decimal(costs.bowls ?? 100);
     people = Array.isArray(gameState.people) && gameState.people.length
       ? gameState.people.map((person) =>
           person && person.speed === null
@@ -311,7 +314,12 @@ function consumeBowl(bowln) {
   // if this bowl is already being collected, ignore further requests
   if (b[3]) return;
   const sz = b[2];
-  const amount = Math.round(50 * upgs.mult * sz * 0.66 * (b[4] ? 100 : 1));
+  const amount = new Decimal(50)
+    .times(upgs.mult)
+    .times(sz)
+    .times(0.66)
+    .times(b[4] ? 100 : 1)
+    .round();
 
   // attach animation meta to the bowl so run() can animate it in-place
   b[3] = {
@@ -339,9 +347,9 @@ canv.addEventListener("click", (e) => {
 });
 document.getElementById("multiplier").addEventListener("click", () => {
   if (score.gte(costs.mult)) {
-    upgs.mult *= 1.5;
+    upgs.mult = upgs.mult.times(1.5);
     score = score.minus(costs.mult);
-    costs.mult = Math.round(300 * upgs.mult * 1.1);
+    costs.mult = new Decimal(300).times(upgs.mult).times(1.1).round();
     document.getElementById("multiplier").innerText =
       "multiplier (" + formatter.format(costs.mult.toFixed(0)) + " pts)";
     ctx.clearRect(0, 0, canv.width, canv.height);
@@ -354,7 +362,7 @@ document.getElementById("multiplier").addEventListener("click", () => {
 document.getElementById("abowl").addEventListener("click", () => {
   if (score.gte(costs.bowls)) {
     score = score.minus(costs.bowls);
-    costs.bowls = Math.round(costs.bowls * 1.1);
+    costs.bowls = costs.bowls.times(1.1).round();
     const x = Math.random() * (sz.width - 300);
     const y = Math.random() * sz.height;
     const syz = Math.random() + 1;
@@ -372,7 +380,7 @@ document.getElementById("abowl").addEventListener("click", () => {
 document.getElementById("aapbowl").addEventListener("click", () => {
   while (score.gte(costs.bowls)) {
     score = score.minus(costs.bowls);
-    costs.bowls = Math.round(costs.bowls * 1.1);
+    costs.bowls = costs.bowls.times(1.1).round();
     const x = Math.random() * (sz.width - 300);
     const y = Math.random() * sz.height;
     const syz = Math.random() + 1;
@@ -410,7 +418,7 @@ document.getElementById("vaccum").addEventListener("click", () => {
 });
 
 let lastGrainConsumptionTime = performance.now();
-let grainAccumulator = 0;
+let grainAccumulator = new Decimal(0);
 document.getElementById("buy1").addEventListener("click", () => {
   if (score.gte(500)) {
     score = score.minus(500);
@@ -689,7 +697,7 @@ function rebirth() {
   if (score.gte(new Decimal("1e72").times(upgs.rbirth + 1))) {
     const rebirthScore = score;
     upgs.autoclicker = false;
-    upgs.mult = 1;
+    upgs.mult = new Decimal(1);
     upgs.vaccum = false;
     upgs.bowls = 5;
     bowls = [];
@@ -697,8 +705,8 @@ function rebirth() {
     grains = new Decimal(0);
     costs = {
       autoclicker: 200,
-      mult: 300,
-      bowls: 100,
+      mult: new Decimal(300),
+      bowls: new Decimal(100),
     };
     people = [
       {
@@ -892,7 +900,7 @@ function run() {
         // finalize: credit grains and replace this bowl with a new random one
         grains = grains.plus(a.amount);
         lastGrainConsumptionTime = nowAnim;
-        grainAccumulator = 0;
+        grainAccumulator = new Decimal(0);
         // replace bowl at this index with a new random bowl
         const x = Math.random() * (sz.width - 300);
         const y = Math.random() * sz.height;
@@ -912,29 +920,30 @@ function run() {
     const now = performance.now();
     const elapsedMs = now - lastGrainConsumptionTime;
     // Sum up speeds from all people (consumption rate)
-    const totalSpeed = people.reduce((sum, p) => sum + p.speed, 0);
-    const grainConsumptionRate = totalSpeed / 1000; // grains per ms
-    grainAccumulator += elapsedMs * grainConsumptionRate;
+    const totalSpeed = people.reduce(
+      (sum, person) => sum.plus(person.speed),
+      new Decimal(0),
+    );
+    const grainConsumptionRate = totalSpeed.div(1000); // grains per ms
+    grainAccumulator = grainAccumulator.plus(grainConsumptionRate.times(elapsedMs));
 
-    if (grainAccumulator >= 1) {
-      const availableGrains = grains.toNumber();
-      const grainsConsumed = new Decimal(
-        Number.isFinite(availableGrains)
-          ? Math.min(Math.floor(grainAccumulator), availableGrains)
-          : Math.floor(grainAccumulator),
-      );
+    if (grainAccumulator.gte(1)) {
+      const grainsConsumed = Decimal.min(grainAccumulator.floor(), grains);
       grains = grains.minus(grainsConsumed);
-      grainAccumulator -= grainsConsumed.toNumber();
+      grainAccumulator = grainAccumulator.minus(grainsConsumed);
       const rewardRate = people.reduce(
-        (sum, person) => sum + person.speed * person.reward,
-        0,
+        (sum, person) => sum.plus(new Decimal(person.speed).times(person.reward)),
+        new Decimal(0),
       );
-      score = score.plus(new Decimal(rewardRate / totalSpeed).times(grainsConsumed).times(upgs.rbirth * 0.25 + 1));
+      score = score.plus(rewardRate.div(totalSpeed).times(grainsConsumed).times(upgs.rbirth * 0.25 + 1));
       score = score.toDecimalPlaces(2);
       lastGrainConsumptionTime = now;
     }
   }
-  const totalSpeed = people.reduce((sum, p) => sum + p.speed, 0);
+  const totalSpeed = people.reduce(
+    (sum, person) => sum.plus(person.speed),
+    new Decimal(0),
+  );
   const grainsPerSec = totalSpeed;
   ctx.fillText(
     "Grains/sec (max): " + formatter.format(grainsPerSec.toFixed(1)),
