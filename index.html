@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Rice</title>
     <link rel="stylesheet" href="style.css">
+    <script src="saveFiles.js"></script>
   </head>
   <body>
     
@@ -39,6 +40,15 @@
           <li><button id="buy16">Wait, what? - 1 qag points</button><br></li> x <span id="amtppl16">0</span>
         </ul>
       </div>
+      <button id="savefile" onclick="downloadSaveFile(generateSaveFile({
+    score,
+    grains,
+    upgs,
+    costs,
+    people,
+  }))">Save as file</button>
+      <h4>Save file:</h4>
+      <input id="savefileinp" type="file">
       <button id="clear" onclick="clearSave()" style="background-color: red; color: white;">Clear Save</button>
       <div id="pinpad">
         <button id="pp1">1</button>
@@ -66,6 +76,7 @@
     </div>
     </div>
     <div id="dialog"></div>
+    <script src="https://cdn.jsdelivr.net/npm/decimal.js@10.4.3/decimal.min.js"></script>
     <script src="main.js"></script>
   </body>
 </html>

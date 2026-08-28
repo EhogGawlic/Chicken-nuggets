@@ -74,6 +74,27 @@ function parseScoreText(s) {
   return value;
 }
 
+function scoreOrder(scoreText) {
+  if (scoreText === undefined || scoreText === null) return -Infinity;
+  const match = String(scoreText).replace(/,/g, '').trim().match(/^([+-]?[0-9]*\.?[0-9]+)\s*([A-Za-z]+)?$/);
+  if (!match) return -Infinity;
+  const suffixes = ["", "K", "M", "B", "T", "Qd", "Qi", "Sx", "Sp", "Oc", "No", "Dc", "UDc", "DDc", "TDc", "QaD", "QiD", "SxD", "SpD", "OcD", "NoD", "Vg", "UVg", "DVg", "TVg", "Qag", "Qig", "Sxg", "Spg", "Ocg", "Nog", "Dcg", "UDcg", "DDcg", "TDcg", "Qadcg", "Qidcg", "Sxdcg", "Spdcg", "Odcg", "Nodcg"];
+  const units = ["", "U", "D", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No"];
+  const tens = { 4: "Qag", 5: "Qig", 6: "Sxg", 7: "Spg", 8: "Ocg", 9: "Nog" };
+  for (let group = suffixes.length; group <= 111; group += 1) {
+    if (group < 100) {
+      suffixes.push(`${units[group % 10]}${tens[Math.floor(group / 10)]}`);
+    } else if (group < 110) {
+      suffixes.push(`${units[group - 100]}Ce`);
+    } else {
+      suffixes.push(`${group === 110 ? "De" : "UDe"}Ce`);
+    }
+  }
+  const suffixIndex = suffixes.findIndex((suffix) => suffix.toLowerCase() === (match[2] || '').toLowerCase());
+  if (suffixIndex < 0) return -Infinity;
+  return Math.log10(Number(match[1])) + suffixIndex * 3;
+}
+
 export async function handler(event) {
   try {
     const client = await getClient().catch((e) => {
@@ -88,7 +109,7 @@ export async function handler(event) {
     if (event.httpMethod === 'GET') {
       const qs = event.queryStringParameters || {};
       const limit = Math.min(parseInt(qs.limit) || 10, 100);
-      const top = await col.find().sort({ score: -1, createdAt: 1 }).limit(limit).toArray();
+      const top = await col.find().sort({ scoreOrder: -1, score: -1, createdAt: 1 }).limit(limit).toArray();
       return { statusCode: 200, body: JSON.stringify(top) };
     }
 
@@ -101,14 +122,17 @@ export async function handler(event) {
       // Accept either numeric `score` or textual `scoreText` (compact suffixes)
       let numericScore = null;
       let scoreText = null;
+      let order = -Infinity;
       if (body.score !== undefined && typeof body.score === 'number' && Number.isFinite(body.score)) {
         numericScore = body.score;
         scoreText = String(body.score);
+        order = Math.log10(body.score);
       } else if (body.scoreText) {
         scoreText = String(body.scoreText);
         // try to parse compact suffixes like 1.2K, 3M, etc.
         const parsed = parseScoreText(scoreText);
         if (Number.isFinite(parsed)) numericScore = parsed;
+        order = scoreOrder(scoreText);
       }
 
       const normalizedName = String(name).trim().slice(0, 64);
@@ -117,7 +141,7 @@ export async function handler(event) {
       await col.updateOne(
         { name: normalizedName },
         {
-          $set: { score: numericScore, scoreText },
+          $set: { score: numericScore, scoreText, scoreOrder: order },
           $setOnInsert: { name: normalizedName, createdAt: new Date() },
         },
         { upsert: true },

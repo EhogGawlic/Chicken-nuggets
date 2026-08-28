@@ -43,34 +43,45 @@ const compactSuffixes = [
   "Nodcg"
 ];
 
+const illionUnitPrefixes = ["", "U", "D", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No"];
+const illionTensPrefixes = { 4: "Qag", 5: "Qig", 6: "Sxg", 7: "Spg", 8: "Ocg", 9: "Nog" };
+
+for (let group = compactSuffixes.length; group <= 111; group += 1) {
+  let suffix;
+  if (group < 100) {
+    const tens = Math.floor(group / 10);
+    const units = group % 10;
+    suffix = `${illionUnitPrefixes[units]}${illionTensPrefixes[tens]}`;
+  } else if (group < 110) {
+    suffix = `${illionUnitPrefixes[group - 100]}Ce`;
+  } else {
+    suffix = `${group === 110 ? "De" : "UDe"}Ce`;
+  }
+  compactSuffixes.push(suffix);
+}
+
 const formatter = {
   format(value) {
-    const num = Number(value);
-    if (!Number.isFinite(num)) return "Infinity";
+    const num = new Decimal(value);
 
-    const negative = num < 0;
-    const abs = Math.abs(num);
+    if (num.isZero()) return "0";
+    if (!num.isFinite()) return num.isNegative() ? "-Infinity" : "Infinity";
 
-    if (abs < 1000) {
-      return `${negative ? "-" : ""}${abs.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+    let exponent = 0;
+    let scaled = num.abs();
+    while (scaled.gte(1000)) {
+      scaled = scaled.div(1000);
+      exponent += 1;
     }
 
-    let suffixIndex = 0;
-    let scaled = abs;
+    const suffix = exponent < compactSuffixes.length
+      ? compactSuffixes[exponent]
+      : `e${exponent * 3}`;
 
-    while (scaled >= 1000 && suffixIndex < compactSuffixes.length - 1) {
-      scaled /= 1000;
-      suffixIndex++;
-    }
-
-    const decimals = scaled >= 100 ? 0 : scaled >= 10 ? 1 : 2;
-    const formatted = scaled.toLocaleString("en-US", {
-      minimumFractionDigits: decimals > 0 ? 1 : 0,
-      maximumFractionDigits: decimals,
-    });
-    
-    return `${negative ? "-" : ""}${formatted}${compactSuffixes[suffixIndex]}`;
-  },
+    const decimals = scaled.gte(100) ? 0 : scaled.gte(10) ? 1 : 2;
+    const formatted = scaled.toDecimalPlaces(decimals).toString();
+    return `${num.isNegative() ? "-" : ""}${formatted}${suffix}`;
+  }
 };
 /**
  * @type {HTMLCanvasElement} canv
@@ -85,7 +96,7 @@ ctx.font = "40px Verdana";
 let bowls = [];
 let mx, my;
 let cbowl;
-let score = 500;
+let score = new Decimal(500);
 let upgs = {
   autoclicker: false,
   mult: 1,
@@ -109,7 +120,7 @@ let people = [
     rcost: 200,
   },
 ];
-let grains = 0;
+let grains = new Decimal(0);
 const waitWhatSpeed = Number.MAX_VALUE * 0.01;
 const spds = [
   50, 100, 200, 500, 10000, 100000, 1000000, 10000000, 1000000000, 10000000000,
@@ -122,8 +133,8 @@ let sbowlamt = 4;
 // Save/Load functions
 async function saveGameState() {
   const gameState = {
-    score,
-    grains,
+    score: score.toString(),
+    grains: grains.toString(),
     upgs,
     costs,
     people,
@@ -144,12 +155,14 @@ function loadGameState() {
       localStorage.removeItem("TheRice");
       return false;
     }
-    score = typeof gameState.score === "number" && Number.isFinite(gameState.score)
-      ? gameState.score
-      : 500;
-    grains = typeof gameState.grains === "number" && Number.isFinite(gameState.grains)
-      ? gameState.grains
-      : 0;
+    try {
+      score = new Decimal(gameState.score ?? 500);
+      grains = new Decimal(gameState.grains ?? 0);
+      if (!score.isFinite() || !grains.isFinite()) throw new Error("invalid save values");
+    } catch {
+      score = new Decimal(500);
+      grains = new Decimal(0);
+    }
     upgs = { ...upgs, ...(gameState.upgs || {}) };
     costs = { ...costs, ...(gameState.costs || {}) };
     people = Array.isArray(gameState.people) && gameState.people.length
@@ -325,9 +338,9 @@ canv.addEventListener("click", (e) => {
   }
 });
 document.getElementById("multiplier").addEventListener("click", () => {
-  if (score >= costs.mult) {
+  if (score.gte(costs.mult)) {
     upgs.mult *= 1.5;
-    score -= costs.mult;
+    score = score.minus(costs.mult);
     costs.mult = Math.round(300 * upgs.mult * 1.1);
     document.getElementById("multiplier").innerText =
       "multiplier (" + formatter.format(costs.mult.toFixed(0)) + " pts)";
@@ -339,8 +352,8 @@ document.getElementById("multiplier").addEventListener("click", () => {
   }
 });
 document.getElementById("abowl").addEventListener("click", () => {
-  if (score >= costs.bowls) {
-    score -= costs.bowls;
+  if (score.gte(costs.bowls)) {
+    score = score.minus(costs.bowls);
     costs.bowls = Math.round(costs.bowls * 1.1);
     const x = Math.random() * (sz.width - 300);
     const y = Math.random() * sz.height;
@@ -357,8 +370,8 @@ document.getElementById("abowl").addEventListener("click", () => {
   }
 });
 document.getElementById("aapbowl").addEventListener("click", () => {
-  while (score >= costs.bowls) {
-    score -= costs.bowls;
+  while (score.gte(costs.bowls)) {
+    score = score.minus(costs.bowls);
     costs.bowls = Math.round(costs.bowls * 1.1);
     const x = Math.random() * (sz.width - 300);
     const y = Math.random() * sz.height;
@@ -379,9 +392,9 @@ function outputD(t) {
   }
 }
 document.getElementById("autoclicker").addEventListener("click", () => {
-  if (score >= 200 && !upgs.autoclicker) {
+  if (score.gte(200) && !upgs.autoclicker) {
     upgs.autoclicker = true;
-    score -= 200;
+    score = score.minus(200);
     setInterval(() => {
       if (cbowl !== undefined) {
         consumeBowl(cbowl);
@@ -390,8 +403,8 @@ document.getElementById("autoclicker").addEventListener("click", () => {
   }
 });
 document.getElementById("vaccum").addEventListener("click", () => {
-  if (score >= 10000 && !upgs.vaccum) {
-    score -= 10000;
+  if (score.gte(10000) && !upgs.vaccum) {
+    score = score.minus(10000);
     upgs.vaccum = true;
   }
 });
@@ -399,8 +412,8 @@ document.getElementById("vaccum").addEventListener("click", () => {
 let lastGrainConsumptionTime = performance.now();
 let grainAccumulator = 0;
 document.getElementById("buy1").addEventListener("click", () => {
-  if (score >= 500) {
-    score -= 500;
+  if (score.gte(500)) {
+    score = score.minus(500);
     people.push({
       speed: 50,
       upg: 0,
@@ -415,8 +428,8 @@ document.getElementById("buy1").addEventListener("click", () => {
   }
 });
 document.getElementById("buy2").addEventListener("click", () => {
-  if (score >= 1500) {
-    score -= 1500;
+  if (score.gte(1500)) {
+    score = score.minus(1500);
     people.push({
       speed: 100,
       upg: 0,
@@ -431,8 +444,8 @@ document.getElementById("buy2").addEventListener("click", () => {
   }
 });
 document.getElementById("buy3").addEventListener("click", () => {
-  if (score >= 2500) {
-    score -= 2500;
+  if (score.gte(2500)) {
+    score = score.minus(2500);
     people.push({
       speed: 200,
       upg: 0,
@@ -448,8 +461,8 @@ document.getElementById("buy3").addEventListener("click", () => {
   }
 });
 document.getElementById("buy4").addEventListener("click", () => {
-  if (score >= 5000) {
-    score -= 5000;
+  if (score.gte(5000)) {
+    score = score.minus(5000);
     people.push({
       speed: 500,
       upg: 0,
@@ -465,8 +478,8 @@ document.getElementById("buy4").addEventListener("click", () => {
   }
 });
 document.getElementById("buy5").addEventListener("click", () => {
-  if (score >= 100000) {
-    score -= 100000;
+  if (score.gte(100000)) {
+    score = score.minus(100000);
     people.push({
       speed: 10000,
       upg: 0,
@@ -482,8 +495,8 @@ document.getElementById("buy5").addEventListener("click", () => {
   }
 });
 document.getElementById("buy6").addEventListener("click", () => {
-  if (score >= 1000000) {
-    score -= 1000000;
+  if (score.gte(1000000)) {
+    score = score.minus(1000000);
     people.push({
       speed: 100000,
       upg: 0,
@@ -499,8 +512,8 @@ document.getElementById("buy6").addEventListener("click", () => {
   }
 });
 document.getElementById("buy7").addEventListener("click", () => {
-  if (score >= 100000000) {
-    score -= 100000000;
+  if (score.gte(100000000)) {
+    score = score.minus(100000000);
     people.push({
       speed: 1000000,
       upg: 0,
@@ -516,8 +529,8 @@ document.getElementById("buy7").addEventListener("click", () => {
   }
 });
 document.getElementById("buy8").addEventListener("click", () => {
-  if (score >= 10000000000) {
-    score -= 10000000000;
+  if (score.gte(10000000000)) {
+    score = score.minus(10000000000);
     people.push({
       speed: 10000000,
       upg: 0,
@@ -533,8 +546,8 @@ document.getElementById("buy8").addEventListener("click", () => {
   }
 });
 document.getElementById("buy9").addEventListener("click", () => {
-  if (score >= 100000000000) {
-    score -= 100000000000;
+  if (score.gte(100000000000)) {
+    score = score.minus(100000000000);
     people.push({
       speed: 1000000000,
       upg: 0,
@@ -550,8 +563,8 @@ document.getElementById("buy9").addEventListener("click", () => {
   }
 });
 document.getElementById("buy10").addEventListener("click", () => {
-  if (score >= 1000000000000) {
-    score -= 1000000000000;
+  if (score.gte(1000000000000)) {
+    score = score.minus(1000000000000);
     people.push({
       speed: 10000000000,
       upg: 0,
@@ -567,8 +580,8 @@ document.getElementById("buy10").addEventListener("click", () => {
   }
 });
 document.getElementById("buy11").addEventListener("click", () => {
-  if (score >= 1000000000000000) {
-    score -= 1000000000000000;
+  if (score.gte(1000000000000000)) {
+    score = score.minus(1000000000000000);
     people.push({
       speed: 5000000000000000,
       upg: 0,
@@ -584,8 +597,8 @@ document.getElementById("buy11").addEventListener("click", () => {
   }
 });
 document.getElementById("buy12").addEventListener("click", () => {
-  if (score >= 1000000000000000000) {
-    score -= 1000000000000000000;
+  if (score.gte(1000000000000000000)) {
+    score = score.minus(1000000000000000000);
     people.push({
       speed: 25000000000000000,
       upg: 0,
@@ -601,8 +614,8 @@ document.getElementById("buy12").addEventListener("click", () => {
   }
 });
 document.getElementById("buy13").addEventListener("click", () => {
-  if (score >= 10000000000000000000000000) {
-    score -= 10000000000000000000000000;
+  if (score.gte("10000000000000000000000000")) {
+    score = score.minus("10000000000000000000000000");
     people.push({
       speed: 1000000000000000000000000000,
       upg: 0,
@@ -618,8 +631,8 @@ document.getElementById("buy13").addEventListener("click", () => {
   }
 });
 document.getElementById("buy14").addEventListener("click", () => {
-  if (score >= 100000000000000000000000000000) {
-    score -= 100000000000000000000000000000;
+  if (score.gte("100000000000000000000000000000")) {
+    score = score.minus("100000000000000000000000000000");
     people.push({
       speed: 1000000000000000000000000000000000000000000000000000000,
       upg: 0,
@@ -637,8 +650,8 @@ document.getElementById("buy14").addEventListener("click", () => {
 document.getElementById("buy15").addEventListener("click", () => {
   //cost: 50 NoD
   //speed: 1 Vg
-  if (score >= 1000000000000000000000000000000000000000000000000000000000000) {
-    score -= 1000000000000000000000000000000000000000000000000000000000000;
+  if (score.gte("1e60")) {
+    score = score.minus("1e60");
     people.push({
       speed: 1000000000000000000000000000000000000000000000000000000000000000,
       upg: 0,
@@ -656,8 +669,8 @@ document.getElementById("buy15").addEventListener("click", () => {
 
 document.getElementById("buy16").addEventListener("click", () => {
   //cost: 100 qag
-  if (score >= 1e75) {
-    score -= 1e75;
+  if (score.gte("1e75")) {
+    score = score.minus("1e75");
     people.push({
       speed: waitWhatSpeed,
       upg: 0,
@@ -673,15 +686,15 @@ document.getElementById("buy16").addEventListener("click", () => {
   }
 });
 function rebirth() {
-  if (score >= 1e72*(upgs.rbirth+1)) {
+  if (score.gte(new Decimal("1e72").times(upgs.rbirth + 1))) {
     const rebirthScore = score;
     upgs.autoclicker = false;
     upgs.mult = 1;
     upgs.vaccum = false;
     upgs.bowls = 5;
     bowls = [];
-    score = 500;
-    grains = 0;
+    score = new Decimal(500);
+    grains = new Decimal(0);
     costs = {
       autoclicker: 200,
       mult: 300,
@@ -698,7 +711,7 @@ function rebirth() {
       },
     ];
     upgs.rbirth += 1;
-    upgs.rbirthpts += rebirthScore / 1e71*(upgs.rbirth+1);
+    upgs.rbirthpts += rebirthScore.div("1e71").times(upgs.rbirth + 1).toNumber();
     saveGameState();
     location.reload();
   }
@@ -708,8 +721,8 @@ document.getElementById("rebirthbtn").addEventListener("click", () => {
     <h2>Are you SURE you want to rebirth?</h2>
     <p>This will clear your save, but it will give you rebirth bonuses (x2 score multiplier for first rebirth, then adds +x1 score multiplier per rebirth) and rebirth points, which will have functionality later.</p>
     <p>U sure?</p>
-    <p>Note: will cost ${formatter.format(1e72*(upgs.rbirth*0.25+1))} points to rebirth, and you will lose all your progress.</p>
-    <p>You have ${formatter.format(upgs.rbirthpts)} rebirth points, and will receive ${formatter.format(score/1e71*(upgs.rbirth+1))} points upon rebirth.</p>
+    <p>Note: will cost ${formatter.format(new Decimal("1e72").times(upgs.rbirth * 0.25 + 1))} points to rebirth, and you will lose all your progress.</p>
+    <p>You have ${formatter.format(upgs.rbirthpts)} rebirth points, and will receive ${formatter.format(score.div("1e71").times(upgs.rbirth + 1))} points upon rebirth.</p>
     <p>p.s clear save clears your rebirths so dont click that</p><br>
     <button onclick="rebirth();this.parentElement.style.display='none';">Yes</button>
     <button onclick="this.parentElement.style.display='none';">Cancel</button>
@@ -725,104 +738,119 @@ document.getElementById("sell").addEventListener("click", () => {
     count.innerText = parseFloat(count.innerText) - 1;
   }
 
-  score += 500;
+  score = score.plus(500)
 });
 let pp = "";
-  // --- Leaderboard client integration ---
-  async function submitScore(name, scoreValue) {
-    try {
-      const payload = { name: String(name).slice(0, 64) };
-      if (typeof scoreValue === 'string') {
-        payload.scoreText = scoreValue;
-      } else if (typeof scoreValue === 'number' && Number.isFinite(scoreValue)) {
-        payload.score = Number(scoreValue);
-        payload.scoreText = String(scoreValue);
-      }
-      const res = await fetch('/.netlify/functions/leaderboard', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      localStorage.setItem("leaderName", String(name))
-      return res;
-    } catch (err) {
-      console.error('submitScore error', err);
-      throw err;
-    }
-  }
 
-  async function fetchLeaderboard(limit = 10) {
-    const res = await fetch(`/.netlify/functions/leaderboard?limit=${encodeURIComponent(limit)}`);
-    if (!res.ok) throw new Error('failed to fetch leaderboard');
-    return res.json();
-  }
+document.getElementById("savefileinp").onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-  function renderLeaderboard(list) {
-    const container = document.getElementById('leaderboard-list');
-    if (!container) return;
-    container.innerHTML = '';
-    if (!Array.isArray(list) || list.length === 0) {
-      container.innerText = 'No scores yet.';
-      return;
+  try {
+    const saveData = JSON.parse(await file.text());
+    if (!saveData || typeof saveData !== "object") throw new Error("invalid save");
+    localStorage.setItem("TheRice", JSON.stringify(saveData));
+    location.reload();
+  } catch {
+    alert("Could not load save file.");
+  }
+};
+
+// --- Leaderboard client integration ---
+async function submitScore(name, scoreValue) {
+  try {
+    const payload = { name: String(name).slice(0, 64) };
+    if (typeof scoreValue === 'string') {
+      payload.scoreText = scoreValue;
+    } else if (typeof scoreValue === 'number' && Number.isFinite(scoreValue)) {
+      payload.score = Number(scoreValue);
+      payload.scoreText = String(scoreValue);
     }
-    const ol = document.createElement('ol');
-    list.forEach((item) => {
-      const li = document.createElement('li');
-      const name = item.name || 'Anon';
-      const display = item.scoreText ? item.scoreText : (typeof item.score === 'number' ? formatter.format(item.score) : '0');
-      li.innerText = `${name} — ${display}`;
-      ol.appendChild(li);
+    const res = await fetch('/.netlify/functions/leaderboard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     });
-    container.appendChild(ol);
+    localStorage.setItem("leaderName", String(name))
+    return res;
+  } catch (err) {
+    console.error('submitScore error', err);
+    throw err;
+  }
+}
+
+async function fetchLeaderboard(limit = 10) {
+  const res = await fetch(`/.netlify/functions/leaderboard?limit=${encodeURIComponent(limit)}`);
+  if (!res.ok) throw new Error('failed to fetch leaderboard');
+  return res.json();
+}
+
+function renderLeaderboard(list) {
+  const container = document.getElementById('leaderboard-list');
+  if (!container) return;
+  container.innerHTML = '';
+  if (!Array.isArray(list) || list.length === 0) {
+    container.innerText = 'No scores yet.';
+    return;
+  }
+  const ol = document.createElement('ol');
+  list.forEach((item) => {
+    const li = document.createElement('li');
+    const name = item.name || 'Anon';
+    const display = item.scoreText ? item.scoreText : (typeof item.score === 'number' ? formatter.format(item.score) : '0');
+    li.innerText = `${name} — ${display}`;
+    ol.appendChild(li);
+  });
+  container.appendChild(ol);
+}
+
+// wire up UI
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('leaderboard-form');
+  const nameInput = document.getElementById('leaderboard-name');
+  const submitCurrent = document.getElementById('leaderboard-submit-current');
+  const refreshBtn = document.getElementById('leaderboard-refresh');
+  const nameVal = localStorage.getItem("leadername")
+  document.getElementById('leaderboard-name').value = nameVal
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await submitScore(nameInput.value || 'Anon', Number(score) || 0);
+        scoreInput.value = '';
+        await refreshBtn.click();
+      } catch (err) {
+        alert('Failed to submit score');
+      }
+    });
   }
 
-  // wire up UI
-  document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('leaderboard-form');
-    const nameInput = document.getElementById('leaderboard-name');
-    const submitCurrent = document.getElementById('leaderboard-submit-current');
-    const refreshBtn = document.getElementById('leaderboard-refresh');
-    const nameVal = localStorage.getItem("leadername")
-    document.getElementById('leaderboard-name').value = nameVal
-    if (form) {
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        try {
-          await submitScore(nameInput.value || 'Anon', Number(score) || 0);
-          scoreInput.value = '';
-          await refreshBtn.click();
-        } catch (err) {
-          alert('Failed to submit score');
-        }
-      });
-    }
+  if (submitCurrent) {
+    submitCurrent.addEventListener('click', async () => {
+      try {
+        const name = document.getElementById('leaderboard-name').value || 'Anon.';
+        await submitScore(name, formatter.format(score));
+        await fetchLeaderboard(10).then(renderLeaderboard);
+      } catch (err) {
+        alert('Failed to submit current score');
+      }
+    });
+  }
 
-    if (submitCurrent) {
-      submitCurrent.addEventListener('click', async () => {
-        try {
-          const name = document.getElementById('leaderboard-name').value || 'Anon.';
-          await submitScore(name, formatter.format(score));
-          await fetchLeaderboard(10).then(renderLeaderboard);
-        } catch (err) {
-          alert('Failed to submit current score');
-        }
-      });
-    }
-
-    if (refreshBtn) {
-      refreshBtn.addEventListener('click', async () => {
-        try {
-          const list = await fetchLeaderboard(10);
-          renderLeaderboard(list);
-        } catch (err) {
-          console.error(err);
-          document.getElementById('leaderboard-list').innerText = 'Error loading leaderboard';
-        }
-      });
-      // initial load
-      refreshBtn.click();
-    }
-  });
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', async () => {
+      try {
+        const list = await fetchLeaderboard(10);
+        renderLeaderboard(list);
+      } catch (err) {
+        console.error(err);
+        document.getElementById('leaderboard-list').innerText = 'Error loading leaderboard';
+      }
+    });
+    // initial load
+    refreshBtn.click();
+  }
+});
 Array.from(document.querySelectorAll("#pinpad button")).forEach((elmnt) => {
   elmnt.onclick = () => {
     const txt = elmnt.textContent.trim();
@@ -831,14 +859,14 @@ Array.from(document.querySelectorAll("#pinpad button")).forEach((elmnt) => {
       pp = pp.slice(0, -1);
     } else if (txt === "↵") {
       if (pp === "800867") {
-        score += 1e100;
+        score = score.plus("1e100");
         alert("stop abusing this")
       }
       if (pp === "19472"){
-        score += 100000
+        score = score.plus(100000)
       }
       if (pp === "011235"){
-        score = Infinity
+        score = new Decimal(Number.MAX_VALUE)
       }
       pp = "";
     } else {
@@ -862,7 +890,7 @@ function run() {
       drawBowl(b[0], b[1], scale, scale, b[4]);
       if (progress >= 1) {
         // finalize: credit grains and replace this bowl with a new random one
-        grains += a.amount;
+        grains = grains.plus(a.amount);
         lastGrainConsumptionTime = nowAnim;
         grainAccumulator = 0;
         // replace bowl at this index with a new random bowl
@@ -880,7 +908,7 @@ function run() {
   ctx.fillText("Score: " + formatter.format(score), 10, 50);
 
   // Consume grains based on elapsed time from all people
-  if (grains > 0) {
+  if (grains.gt(0)) {
     const now = performance.now();
     const elapsedMs = now - lastGrainConsumptionTime;
     // Sum up speeds from all people (consumption rate)
@@ -889,15 +917,20 @@ function run() {
     grainAccumulator += elapsedMs * grainConsumptionRate;
 
     if (grainAccumulator >= 1) {
-      const grainsConsumed = Math.min(Math.floor(grainAccumulator), grains);
-      grains -= grainsConsumed;
-      grainAccumulator -= grainsConsumed;
+      const availableGrains = grains.toNumber();
+      const grainsConsumed = new Decimal(
+        Number.isFinite(availableGrains)
+          ? Math.min(Math.floor(grainAccumulator), availableGrains)
+          : Math.floor(grainAccumulator),
+      );
+      grains = grains.minus(grainsConsumed);
+      grainAccumulator -= grainsConsumed.toNumber();
       const rewardRate = people.reduce(
         (sum, person) => sum + person.speed * person.reward,
         0,
       );
-      score += (rewardRate / totalSpeed) * grainsConsumed * (upgs.rbirth*0.25 + 1);
-      score = (Math.round(score * 100) / 100);
+      score = score.plus(new Decimal(rewardRate / totalSpeed).times(grainsConsumed).times(upgs.rbirth * 0.25 + 1));
+      score = score.toDecimalPlaces(2);
       lastGrainConsumptionTime = now;
     }
   }
@@ -936,10 +969,10 @@ function run() {
       }
     });
   }
-  if (score >= 100000){
+  if (score.gte(100000)){
     canv.style.backgroundColor = "gold";
   }
-  if (score >= 1000000000000000000000){
+  if (score.gte("1e21")){
     canv.style.backgroundImage = "linear-gradient(135deg, red, orange, yellow, rgb(0, 255, 0), blue, violet)";
   }
   requestAnimationFrame(run);
