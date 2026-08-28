@@ -127,7 +127,8 @@ const spds = [
   5000000000000000, 25000000000000000, 1000000000000000000000000000,
   1000000000000000000000000000000000000000000000000000000,
   1000000000000000000000000000000000000000000000000000000000000000,
-  waitWhatSpeed
+  waitWhatSpeed,
+  new Decimal("1e333")
 ];
 let sbowlamt = 4;
 // Save/Load functions
@@ -690,7 +691,7 @@ document.getElementById("buy16").addEventListener("click", () => {
       parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
   }
 });
-document.getElementById("buy16").addEventListener("click", () => {
+document.getElementById("buy17").addEventListener("click", () => {
   //cost: 100 qag
   if (score.gte("1e317")) {
     score = score.minus("1e317");
@@ -703,7 +704,7 @@ document.getElementById("buy16").addEventListener("click", () => {
       rcost: 200,
     });
 
-    let n = 16;
+    let n = 17;
     document.getElementById("amtppl" + n).innerText =
       parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
   }
