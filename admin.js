@@ -33,6 +33,7 @@ async function loadLeaderboard(){
                 body: JSON.stringify({ name: score.name })
             })
             if (!deleteRes.ok) throw new Error(`Delete request failed: ${deleteRes.status}`)
+            if (!deleteRes.ok) alert(`Delete request failed: ${deleteRes.status}`)
             item.remove()
         }
         item.appendChild(delBtn)
