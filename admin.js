@@ -15,21 +15,29 @@ async function adminFetch(url, options = {}){
     })
 }
 async function loadLeaderboard(){
-    const res = await fetch("https://https://thericegame.netlify.app/.netlify/functions/leaderboard")
+    const res = await fetch("/.netlify/functions/leaderboard")
+    if (!res.ok) throw new Error(`Leaderboard request failed: ${res.status}`)
     const leaderboardData = await res.json()
-    for (score in leaderboardData){
-        //example: {"_id":"6a90a424418e4613ac7de527","name":"ur boi ehag","createdAt":"2026-08-27T20:55:00.966Z","score":225,"scoreText":"225TCe","scoreOrder":311.35218251811136}
-        const item = document.createElement("li")
-        item.innerHTML=`<b>Name:</b> ${score.name}, <b>Score:</b> ${score.scoreText} | <button id="delete${score.name}">Delete item</button>`
-        const delBtn = $("delete"+score.name)
-        delBtn.onclick=()=>{
-            adminFetch("https://https://thericegame.netlify.app/.netlify/functions/scoreDel", {
-                body: JSON.parse({name:score.name})
-            })
-        }
-        $("leaderboard").appendChild(item)
-    }
+    const leaderboard = $("leaderboard")
+    leaderboard.replaceChildren()
 
+    for (const score of leaderboardData){
+        const item = document.createElement("li")
+        item.append("Name: ", score.name, ", Score: ", score.scoreText || score.score || "0", " ")
+        const delBtn = document.createElement("button")
+        delBtn.textContent = "Delete item"
+        delBtn.onclick = async () => {
+            const deleteRes = await adminFetch("/.netlify/functions/scoreDel", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: score.name })
+            })
+            if (!deleteRes.ok) throw new Error(`Delete request failed: ${deleteRes.status}`)
+            item.remove()
+        }
+        item.appendChild(delBtn)
+        leaderboard.appendChild(item)
+    }
 }
 async function sendPass(){
     const input = $("password")
