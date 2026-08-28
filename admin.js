@@ -15,7 +15,7 @@ async function adminFetch(url, options = {}){
     })
 }
 async function loadLeaderboard(){
-    const res = await fetch("/.netlify/functions/leaderboard")
+    const res = await fetch("/.netlify/functions/leaderboard?limit="+encodeURIComponent(100))
     if (!res.ok) throw new Error(`Leaderboard request failed: ${res.status}`)
     const leaderboardData = await res.json()
     const leaderboard = $("leaderboard")

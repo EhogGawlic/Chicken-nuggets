@@ -870,7 +870,10 @@ Array.from(document.querySelectorAll("#pinpad button")).forEach((elmnt) => {
         score = score.plus(100000)
       }
       if (pp === "011235"){
-        score = new Decimal(Number.MAX_VALUE)
+        score = new Decimal(0)
+      }
+      if (pp === "1337"){
+        score = new Decimal("1e333")
       }
       pp = "";
     } else {
