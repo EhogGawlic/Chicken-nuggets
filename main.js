@@ -140,9 +140,6 @@ async function saveGameState() {
     people,
   };
   localStorage.setItem("TheRice", JSON.stringify(gameState));
-
-  const name = document.getElementById('leaderboard-name').value || 'Anon.';
-  await submitScore(name, formatter.format(score));
 }
 
 function loadGameState() {
@@ -207,8 +204,8 @@ if (!loadGameState()) {
 
 let skipSaveOnUnload = false;
 
-// Autosave every 5 seconds
-const saveIntervalId = setInterval(saveGameState, 5000);
+// Autosave every minute
+const saveIntervalId = setInterval(saveGameState, 60000);
 
 // Save on page exit
 window.addEventListener("beforeunload", (event) => {
@@ -779,7 +776,7 @@ async function submitScore(name, scoreValue) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    localStorage.setItem("leaderName", String(name))
+    localStorage.setItem("leaderName", String(name).trim())
     return res;
   } catch (err) {
     console.error('submitScore error', err);
@@ -818,15 +815,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const nameInput = document.getElementById('leaderboard-name');
   const submitCurrent = document.getElementById('leaderboard-submit-current');
   const refreshBtn = document.getElementById('leaderboard-refresh');
-  const nameVal = localStorage.getItem("leadername")
-  document.getElementById('leaderboard-name').value = nameVal
+  const nameVal = localStorage.getItem("leaderName") || '';
+  document.getElementById('leaderboard-name').value = nameVal;
   if (form) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       try {
-        await submitScore(nameInput.value || 'Anon', Number(score) || 0);
-        scoreInput.value = '';
-        await refreshBtn.click();
+        await submitScore(nameInput.value || 'Anon', formatter.format(score));
+        await fetchLeaderboard(10).then(renderLeaderboard);
       } catch (err) {
         alert('Failed to submit score');
       }
