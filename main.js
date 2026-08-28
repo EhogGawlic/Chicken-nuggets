@@ -690,6 +690,24 @@ document.getElementById("buy16").addEventListener("click", () => {
       parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
   }
 });
+document.getElementById("buy16").addEventListener("click", () => {
+  //cost: 100 qag
+  if (score.gte("1e317")) {
+    score = score.minus("1e317");
+    people.push({
+      speed: new Decimal("1e333"),
+      upg: 0,
+      cost: 200,
+      reward: 10,
+      rupg: 0,
+      rcost: 200,
+    });
+
+    let n = 16;
+    document.getElementById("amtppl" + n).innerText =
+      parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
+  }
+});
 function rebirth() {
   if (score.gte(new Decimal("1e72").times(upgs.rbirth + 1))) {
     const rebirthScore = score;
