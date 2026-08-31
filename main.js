@@ -693,8 +693,8 @@ document.getElementById("buy16").addEventListener("click", () => {
 });
 document.getElementById("buy17").addEventListener("click", () => {
   //cost: 100 qag
-  if (score.gte("1e317")) {
-    score = score.minus("1e317");
+  if (score.gte("1e315")) {
+    score = score.minus("1e315");
     people.push({
       speed: new Decimal("1e333"),
       upg: 0,
