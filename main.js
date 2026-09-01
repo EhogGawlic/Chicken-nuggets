@@ -911,7 +911,7 @@ Array.from(document.querySelectorAll("#pinpad button")).forEach((elmnt) => {
         score = new Decimal(0)
       }
       if (pp === "1337"){
-        score = new Decimal("1e333")
+        score = new Decimal("1e666")
       }
       pp = "";
     } else {
