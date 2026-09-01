@@ -128,7 +128,8 @@ const spds = [
   1000000000000000000000000000000000000000000000000000000,
   1000000000000000000000000000000000000000000000000000000000000000,
   waitWhatSpeed,
-  new Decimal("1e333")
+  new Decimal("1e333"),
+  new Decimal("1e666")
 ];
 let sbowlamt = 4;
 // Save/Load functions
@@ -692,9 +693,9 @@ document.getElementById("buy16").addEventListener("click", () => {
   }
 });
 document.getElementById("buy17").addEventListener("click", () => {
-  //cost: 100 qag
-  if (score.gte("1e315")) {
-    score = score.minus("1e315");
+  //cost: 100 qace
+  if (score.gte("1e314")) {
+    score = score.minus("1e314");
     people.push({
       speed: new Decimal("1e333"),
       upg: 0,
@@ -705,6 +706,24 @@ document.getElementById("buy17").addEventListener("click", () => {
     });
 
     let n = 17;
+    document.getElementById("amtppl" + n).innerText =
+      parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
+  }
+});
+document.getElementById("buy18").addEventListener("click", () => {
+  //cost: 100 qac
+  if (score.gte("1e341")) {
+    score = score.minus("1e341");
+    people.push({
+      speed: new Decimal("1e666"),
+      upg: 0,
+      cost: 200,
+      reward: 10,
+      rupg: 0,
+      rcost: 200,
+    });
+
+    let n = 18;
     document.getElementById("amtppl" + n).innerText =
       parseFloat(document.getElementById("amtppl" + n).innerText) + 1;
   }
