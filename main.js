@@ -904,7 +904,7 @@ Array.from(document.querySelectorAll("#pinpad button")).forEach((elmnt) => {
         score = score.plus("1e100");
         alert("stop abusing this")
       }
-      if (pp === "19472"){
+      if (pp === "1975"){
         score = score.plus(100000)
       }
       if (pp === "011235"){

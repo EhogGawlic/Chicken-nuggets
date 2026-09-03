@@ -12,16 +12,7 @@ async function getClient() {
   return client;
 }
 
-// Parse compact suffixes used by the client (e.g. "1.2K", "3M", etc.)
-function parseScoreText(s) {
-  if (s === undefined || s === null) return NaN;
-  let str = String(s).trim();
-  if (!str) return NaN;
-  str = str.replace(/,/g, '');
-  const m = str.match(/^([+-]?[0-9]*\.?[0-9]+)\s*([A-Za-z]+)?$/);
-  if (!m) return NaN;
-  const num = parseFloat(m[1]);
-  const suffix = (m[2] || '').trim();
+function buildCompactSuffixes() {
   const suffixes = [
     "",
     "K",
@@ -65,34 +56,74 @@ function parseScoreText(s) {
     "Odcg",
     "Nodcg",
   ];
-  const idx = suffixes.findIndex((x) => x.toLowerCase() === suffix.toLowerCase());
-  if (idx === -1) {
-    // unknown suffix — try to parse plain number
-    return num;
+  const illionUnitPrefixes = ["", "U", "D", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No"];
+  const illionTensPrefixes = { 4: "Qag", 5: "Qig", 6: "Sxg", 7: "Spg", 8: "Ocg", 9: "Nog" };
+
+  for (let group = suffixes.length; group <= 111; group += 1) {
+    let suffix;
+    if (group < 100) {
+      const tens = Math.floor(group / 10);
+      const units = group % 10;
+      suffix = `${illionUnitPrefixes[units]}${illionTensPrefixes[tens]}`;
+    } else if (group < 110) {
+      suffix = `${illionUnitPrefixes[group - 100]}Ce`;
+    } else {
+      suffix = `${group === 110 ? 'De' : 'UDe'}Ce`;
+    }
+    suffixes.push(suffix);
   }
-  const value = num * Math.pow(1000, idx);
-  return value;
+
+  return suffixes;
+}
+
+const compactSuffixes = buildCompactSuffixes();
+
+// Parse compact suffixes used by the client (e.g. "1.2K", "3M", etc.) and scientific notation.
+function parseScoreText(s) {
+  if (s === undefined || s === null) return NaN;
+  const str = String(s).replace(/,/g, '').trim();
+  if (!str) return NaN;
+
+  const scientific = str.match(/^([+-]?(?:\d+\.?\d*|\.\d+))(?:[eE]([+-]?\d+))$/);
+  if (scientific) {
+    const mantissa = Number(scientific[1]);
+    const exponent = Number(scientific[2] || '0');
+    if (!Number.isFinite(mantissa) || !Number.isFinite(exponent)) return NaN;
+    return mantissa * 10 ** exponent;
+  }
+
+  const m = str.match(/^([+-]?(?:\d+\.?\d*|\.\d+))\s*([A-Za-z]+)?$/);
+  if (!m) return NaN;
+
+  const num = Number(m[1]);
+  const suffix = (m[2] || '').trim();
+  const idx = compactSuffixes.findIndex((x) => x.toLowerCase() === suffix.toLowerCase());
+  if (idx < 0) return num;
+  return num * 1000 ** idx;
 }
 
 function scoreOrder(scoreText) {
   if (scoreText === undefined || scoreText === null) return -Infinity;
-  const match = String(scoreText).replace(/,/g, '').trim().match(/^([+-]?[0-9]*\.?[0-9]+)\s*([A-Za-z]+)?$/);
-  if (!match) return -Infinity;
-  const suffixes = ["", "K", "M", "B", "T", "Qd", "Qi", "Sx", "Sp", "Oc", "No", "Dc", "UDc", "DDc", "TDc", "QaD", "QiD", "SxD", "SpD", "OcD", "NoD", "Vg", "UVg", "DVg", "TVg", "Qag", "Qig", "Sxg", "Spg", "Ocg", "Nog", "Dcg", "UDcg", "DDcg", "TDcg", "Qadcg", "Qidcg", "Sxdcg", "Spdcg", "Odcg", "Nodcg"];
-  const units = ["", "U", "D", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No"];
-  const tens = { 4: "Qag", 5: "Qig", 6: "Sxg", 7: "Spg", 8: "Ocg", 9: "Nog" };
-  for (let group = suffixes.length; group <= 111; group += 1) {
-    if (group < 100) {
-      suffixes.push(`${units[group % 10]}${tens[Math.floor(group / 10)]}`);
-    } else if (group < 110) {
-      suffixes.push(`${units[group - 100]}Ce`);
-    } else {
-      suffixes.push(`${group === 110 ? "De" : "UDe"}Ce`);
-    }
+  const str = String(scoreText).replace(/,/g, '').trim();
+  if (!str) return -Infinity;
+
+  const scientific = str.match(/^([+-]?(?:\d+\.?\d*|\.\d+))(?:[eE]([+-]?\d+))$/);
+  if (scientific) {
+    const mantissa = Number(scientific[1]);
+    const exponent = Number(scientific[2] || '0');
+    if (!Number.isFinite(mantissa) || !Number.isFinite(exponent)) return -Infinity;
+    return Math.log10(Math.abs(mantissa)) + exponent;
   }
-  const suffixIndex = suffixes.findIndex((suffix) => suffix.toLowerCase() === (match[2] || '').toLowerCase());
-  if (suffixIndex < 0) return -Infinity;
-  return Math.log10(Number(match[1])) + suffixIndex * 3;
+
+  const match = str.match(/^([+-]?(?:\d+\.?\d*|\.\d+))\s*([A-Za-z]+)?$/);
+  if (!match) return -Infinity;
+
+  const value = Number(match[1]);
+  if (!Number.isFinite(value)) return -Infinity;
+  const suffix = (match[2] || '').trim();
+  const idx = compactSuffixes.findIndex((x) => x.toLowerCase() === suffix.toLowerCase());
+  if (idx < 0) return Math.log10(Math.abs(value));
+  return Math.log10(Math.abs(value)) + idx * 3;
 }
 
 export async function handler(event) {
@@ -109,7 +140,18 @@ export async function handler(event) {
     if (event.httpMethod === 'GET') {
       const qs = event.queryStringParameters || {};
       const limit = Math.min(parseInt(qs.limit) || 10, 100);
-      const top = await col.find().sort({ scoreOrder: -1, score: -1, createdAt: 1 }).limit(limit).toArray();
+      const top = await col.find().limit(limit).toArray();
+      top.sort((a, b) => {
+        const aOrder = scoreOrder(a.scoreText ?? a.score ?? 0);
+        const bOrder = scoreOrder(b.scoreText ?? b.score ?? 0);
+        if (bOrder !== aOrder) return bOrder - aOrder;
+
+        const aScore = Number.isFinite(Number(a.score)) ? Number(a.score) : 0;
+        const bScore = Number.isFinite(Number(b.score)) ? Number(b.score) : 0;
+        if (bScore !== aScore) return bScore - aScore;
+
+        return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+      });
       return { statusCode: 200, body: JSON.stringify(top) };
     }
 
@@ -126,10 +168,10 @@ export async function handler(event) {
       if (body.score !== undefined && typeof body.score === 'number' && Number.isFinite(body.score)) {
         numericScore = body.score;
         scoreText = String(body.score);
-        order = Math.log10(body.score);
+        order = Math.log10(Math.abs(body.score));
       } else if (body.scoreText) {
         scoreText = String(body.scoreText);
-        // try to parse compact suffixes like 1.2K, 3M, etc.
+        // try to parse compact suffixes like 1.2K, 3M, scientific notation, and the game's custom long-suffix format.
         const parsed = parseScoreText(scoreText);
         if (Number.isFinite(parsed)) numericScore = parsed;
         order = scoreOrder(scoreText);
