@@ -116,9 +116,9 @@ try {
   let mx, my;
   let cbowl;
   let score = new Decimal(500);
-  const TACO_GRID_SIZE = 150;
-  const TACO_GRID_COLS = 15;
-  const TACO_GRID_ROWS = 10;
+  const TACO_GRID_SIZE = 54;
+  const TACO_GRID_COLS = 9;
+  const TACO_GRID_ROWS = 6;
   let upgs = {
     autoclicker: false,
     mult: new Decimal(1),
@@ -211,11 +211,7 @@ try {
         upgs.tacoTrees = [];
       }
       if (upgs.tacoTrees.length !== TACO_GRID_SIZE) {
-        // Migrate any old variable-length tree array (unlimited "plant new
-        // tree" era) into the fixed 150-slot grid, spreading the exact same
-        // total invested levels evenly across the 150 tiles so nobody's
-        // progress (or resulting multiplier) is lost or changed.
-        const totalLevels = upgs.tacoTrees.reduce((sum, lvl) => sum + lvl, 0);
+        const totalLevels = upgs.tacoTrees.reduce((sum, lvl) => sum + 1.25**lvl, 0);
         const base = Math.floor(totalLevels / TACO_GRID_SIZE);
         const remainder = totalLevels % TACO_GRID_SIZE;
         upgs.tacoTrees = new Array(TACO_GRID_SIZE)
