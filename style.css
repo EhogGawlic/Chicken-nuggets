@@ -60,3 +60,39 @@
   border: 2px solid black;
   display: none;
 }
+
+/* upgrades panel tab bar */
+#tabnav{
+  margin-bottom: 8px;
+}
+.tab-btn{
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.tab-btn.active{
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+/* floating popup for an individual taco tree, positioned next to its tile */
+#tacoPopup{
+  position: absolute;
+  display: none;
+  background-color: white;
+  border: 2px solid black;
+  border-radius: 6px;
+  padding: 8px 12px;
+  min-width: 160px;
+  z-index: 30;
+}
+#tacoPopup h4{
+  margin: 4px 0;
+}
+#tacoPopupClose{
+  float: right;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-size: 16px;
+  line-height: 1;
+}

@@ -11,6 +11,11 @@
     <canvas id="canvas"></canvas>
     <div id="output"></div>
     <div id="upgs">
+      <div id="tabnav">
+        <button id="tab-upgrades" class="tab-btn active">Upgrades</button>
+        <button id="tab-tacofarm" class="tab-btn" style="display:none">🌮 Taco Farm</button>
+      </div>
+      <div id="upgrades-tab">
       <h3>upgrades</h3>
       <button id="autoclicker">autoclicker (200 pts)</button><br>
       <button id="multiplier">multiplier (300 pts)</button><br>
@@ -40,6 +45,7 @@
           <li><button id="buy16">Wait, what? - 1 qag points</button><br></li> x <span id="amtppl16">0</span>
           <li><button id="buy17">ayoooooo theres somthing wrong - 100 QaCe points</button><br></li> x <span id="amtppl17">0</span>
           <li><button id="buy18">please stop - 100e339 points</button><br></li> x <span id="amtppl18">0</span>
+          <li><button id="buy19">unloc tacoes - 100e672 points</button><br></li>
         </ul>
       </div>
       <button id="savefile" onclick="downloadSaveFile(generateSaveFile({
@@ -76,8 +82,15 @@
       <button id="leaderboard-refresh">Refresh Leaderboard</button>
       <div id="leaderboard-list"></div>
     </div>
+      </div>
+      <div id="tacofarm-tab" style="display:none">
+        <h3>🌮 Taco Tree Farm</h3>
+        <p>Total speed multiplier: <span id="tacomult">x1</span></p>
+        <p>Click a tile in the grid to plant or upgrade that tree.</p>
+      </div>
     </div>
     <div id="dialog"></div>
+    <div id="tacoPopup"></div>
     <script src="https://cdn.jsdelivr.net/npm/decimal.js@10.4.3/decimal.min.js"></script>
     <script src="main.js"></script>
   </body>
