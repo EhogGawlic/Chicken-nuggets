@@ -119,6 +119,116 @@ try {
   const TACO_GRID_SIZE = 54;
   const TACO_GRID_COLS = 9;
   const TACO_GRID_ROWS = 6;
+
+  // All purchasable prices/scale factors, in one place so the admin panel can
+  // override them. These defaults are exactly what was previously hardcoded
+  // throughout the file, so if the fetch below fails (offline, function down,
+  // no admin overrides saved yet), the game behaves exactly as before.
+  const DEFAULT_PRICES = {
+    autoclicker: "200",
+    vaccum: "10000",
+    multBase: "300",
+    multScale: "1.1",
+    bowlsBase: "100",
+    bowlsScale: "1.1",
+    buy1: "500",
+    buy2: "1500",
+    buy3: "2500",
+    buy4: "5000",
+    buy5: "100000",
+    buy6: "1000000",
+    buy7: "100000000",
+    buy8: "10000000000",
+    buy9: "100000000000",
+    buy10: "1000000000000",
+    buy11: "1000000000000000",
+    buy12: "1000000000000000000",
+    buy13: "10000000000000000000000000",
+    buy14: "100000000000000000000000000000",
+    buy15: "1e60",
+    buy16: "1e75",
+    buy17: "1e314",
+    buy18: "1e341",
+    buy19: "1e674",
+    rebirthBase: "1e72",
+    tacoTreeBase: "1e675",
+    tacoTreeUpgradeScale: "1.15",
+    tacoPlantScale: "3",
+    tacoSpeedBonus: "1.02",
+  };
+  let PRICES = {};
+  for (const key in DEFAULT_PRICES) {
+    PRICES[key] = new Decimal(DEFAULT_PRICES[key]);
+  }
+  // Fetches admin-set overrides. Fire-and-forget: the game starts immediately
+  // with the defaults above, and prices/labels quietly update in place once
+  // (if) this resolves, so a slow or unreachable function never blocks play.
+  async function loadPrices() {
+    try {
+      const res = await fetch("/.netlify/functions/costs");
+      if (!res.ok) return;
+      const overrides = await res.json();
+      for (const key in DEFAULT_PRICES) {
+        if (overrides[key] !== undefined) {
+          try {
+            PRICES[key] = new Decimal(overrides[key]);
+          } catch (e) {
+            // ignore a malformed individual value, keep the default for it
+          }
+        }
+      }
+      applyPriceLabels();
+    } catch (e) {
+      // offline or function unavailable - keep defaults
+    }
+  }
+  const PRICE_BUTTON_LABELS = {
+    autoclicker: (p) =>
+      "autoclicker (" + formatter.format(p.toFixed(0)) + " pts)",
+    vaccum: (p) => "vacuum (" + formatter.format(p.toFixed(0)) + " pts)",
+    buy1: (p) => "Add person - " + formatter.format(p.toFixed(0)) + " points",
+    buy2: (p) => "Add Mexican - " + formatter.format(p.toFixed(0)) + " points",
+    buy3: (p) => "Add Japanese - " + formatter.format(p.toFixed(0)) + " points",
+    buy4: (p) => "Add Asian - " + formatter.format(p.toFixed(0)) + " points",
+    buy5: (p) =>
+      "Add Steven He - " + formatter.format(p.toFixed(0)) + " points",
+    buy6: (p) =>
+      "Add Uncle Roger - " + formatter.format(p.toFixed(0)) + " points",
+    buy7: (p) =>
+      "Add Great Uncle Roger - " + formatter.format(p.toFixed(0)) + " points",
+    buy8: (p) =>
+      "Add Beijing Corn - " + formatter.format(p.toFixed(0)) + " points",
+    buy9: (p) => "Add me - " + formatter.format(p.toFixed(0)) + " points",
+    buy10: (p) => "Add oliver - " + formatter.format(p.toFixed(0)) + " points",
+    buy11: (p) => "Add Inari - " + formatter.format(p.toFixed(0)) + " points",
+    buy12: (p) =>
+      "Add the magic of science - " +
+      formatter.format(p.toFixed(0)) +
+      " points",
+    buy13: (p) => "good job - " + formatter.format(p.toFixed(0)) + " points",
+    buy14: (p) => "good job 2 - " + formatter.format(p.toFixed(0)) + " points",
+    buy15: (p) =>
+      "average chicken nugget - " + formatter.format(p.toFixed(0)) + " points",
+    buy16: (p) => "Wait, what? - " + formatter.format(p.toFixed(0)) + " points",
+    buy17: (p) =>
+      "ayoooooo theres somthing wrong - " +
+      formatter.format(p.toFixed(0)) +
+      " points",
+    buy18: (p) => "please stop - " + formatter.format(p.toFixed(0)) + " points",
+    buy19: (p) =>
+      "unloc tacoes - " + formatter.format(p.toFixed(0)) + " points",
+  };
+  function applyPriceLabels() {
+    for (const key in PRICE_BUTTON_LABELS) {
+      const btn = document.getElementById(key);
+      if (btn) btn.innerText = PRICE_BUTTON_LABELS[key](PRICES[key]);
+    }
+    // mult/bowls track their own already-escalated cost (from save state or
+    // prior purchases this session), not the raw base price, so those two
+    // labels are refreshed from `costs` wherever they're already updated
+    // (initial load below, and inside their own click handlers).
+  }
+
   let upgs = {
     autoclicker: false,
     mult: new Decimal(1),
@@ -130,9 +240,9 @@ try {
     tacoTrees: [],
   };
   let costs = {
-    autoclicker: 200,
-    mult: new Decimal(300),
-    bowls: new Decimal(100),
+    autoclicker: PRICES.autoclicker,
+    mult: new Decimal(PRICES.multBase),
+    bowls: new Decimal(PRICES.bowlsBase),
   };
   let people = [
     {
@@ -211,7 +321,11 @@ try {
         upgs.tacoTrees = [];
       }
       if (upgs.tacoTrees.length !== TACO_GRID_SIZE) {
-        const totalLevels = upgs.tacoTrees.reduce((sum, lvl) => sum + 1.25**lvl, 0);
+        // Migrate any old variable-length tree array (unlimited "plant new
+        // tree" era) into the fixed 150-slot grid, spreading the exact same
+        // total invested levels evenly across the 150 tiles so nobody's
+        // progress (or resulting multiplier) is lost or changed.
+        const totalLevels = upgs.tacoTrees.reduce((sum, lvl) => sum + lvl, 0);
         const base = Math.floor(totalLevels / TACO_GRID_SIZE);
         const remainder = totalLevels % TACO_GRID_SIZE;
         upgs.tacoTrees = new Array(TACO_GRID_SIZE)
@@ -255,6 +369,12 @@ try {
   if (!loadGameState()) {
     // First time or no save - initialize defaults
   }
+  applyPriceLabels();
+  document.getElementById("multiplier").innerText =
+    "multiplier (" + formatter.format(costs.mult.toFixed(0)) + " pts)";
+  document.getElementById("abowl").innerText =
+    "add bowl (" + formatter.format(costs.bowls.toFixed(0)) + " pts)";
+  loadPrices();
 
   // Taco tree farm: a fixed grid of 150 tiles, drawn directly on the canvas.
   // Each tile is an individual tree with its own level; each level adds a
@@ -262,21 +382,17 @@ try {
   // an empty tile gets pricier the more tiles you've already planted, and
   // upgrading a given tree gets pricier the higher that tree's own level
   // is - so which tile you spend on next is a real choice.
-  const TACO_TREE_SPEED_BONUS = 1.02;
-  const TACO_TREE_UPGRADE_SCALE = 1.15;
-  const TACO_PLANT_SCALE = 3;
-
   function tacoTreeUpgradeCost(level) {
-    return new Decimal("1e675").times(
-      new Decimal(TACO_TREE_UPGRADE_SCALE).pow(level),
+    return new Decimal(PRICES.tacoTreeBase).times(
+      new Decimal(PRICES.tacoTreeUpgradeScale).pow(level),
     );
   }
   function tacoPlantedCount() {
     return upgs.tacoTrees.filter((lvl) => lvl > 0).length;
   }
   function tacoPlantCost() {
-    return new Decimal("1e675").times(
-      new Decimal(TACO_PLANT_SCALE).pow(tacoPlantedCount()),
+    return new Decimal(PRICES.tacoTreeBase).times(
+      new Decimal(PRICES.tacoPlantScale).pow(tacoPlantedCount()),
     );
   }
   function tacoTileCost(level) {
@@ -286,7 +402,7 @@ try {
     return upgs.tacoTrees.reduce((sum, lvl) => sum + lvl, 0);
   }
   function tacoMultiplier() {
-    return new Decimal(TACO_TREE_SPEED_BONUS).pow(tacoTotalLevels());
+    return new Decimal(PRICES.tacoSpeedBonus).pow(tacoTotalLevels());
   }
 
   let currentCanvasView = "bowls";
@@ -567,7 +683,10 @@ try {
     if (score.gte(costs.mult)) {
       upgs.mult = upgs.mult.times(1.5);
       score = score.minus(costs.mult);
-      costs.mult = new Decimal(300).times(upgs.mult).times(1.1).round();
+      costs.mult = new Decimal(PRICES.multBase)
+        .times(upgs.mult)
+        .times(PRICES.multScale)
+        .round();
       document.getElementById("multiplier").innerText =
         "multiplier (" + formatter.format(costs.mult.toFixed(0)) + " pts)";
       ctx.clearRect(0, 0, canv.width, canv.height);
@@ -580,7 +699,7 @@ try {
   document.getElementById("abowl").addEventListener("click", () => {
     if (score.gte(costs.bowls)) {
       score = score.minus(costs.bowls);
-      costs.bowls = costs.bowls.times(1.1).round();
+      costs.bowls = costs.bowls.times(PRICES.bowlsScale).round();
       const x = Math.random() * (sz.width - 300);
       const y = Math.random() * sz.height;
       const syz = Math.random() + 1;
@@ -598,7 +717,7 @@ try {
   document.getElementById("aapbowl").addEventListener("click", () => {
     while (score.gte(costs.bowls)) {
       score = score.minus(costs.bowls);
-      costs.bowls = costs.bowls.times(1.1).round();
+      costs.bowls = costs.bowls.times(PRICES.bowlsScale).round();
       const x = Math.random() * (sz.width - 300);
       const y = Math.random() * sz.height;
       const syz = Math.random() + 1;
@@ -618,9 +737,9 @@ try {
     }
   }
   document.getElementById("autoclicker").addEventListener("click", () => {
-    if (score.gte(200) && !upgs.autoclicker) {
+    if (score.gte(PRICES.autoclicker) && !upgs.autoclicker) {
       upgs.autoclicker = true;
-      score = score.minus(200);
+      score = score.minus(PRICES.autoclicker);
       setInterval(() => {
         if (cbowl !== undefined) {
           consumeBowl(cbowl);
@@ -629,8 +748,8 @@ try {
     }
   });
   document.getElementById("vaccum").addEventListener("click", () => {
-    if (score.gte(10000) && !upgs.vaccum) {
-      score = score.minus(10000);
+    if (score.gte(PRICES.vaccum) && !upgs.vaccum) {
+      score = score.minus(PRICES.vaccum);
       upgs.vaccum = true;
     }
   });
@@ -638,8 +757,8 @@ try {
   let lastGrainConsumptionTime = performance.now();
   let grainAccumulator = new Decimal(0);
   document.getElementById("buy1").addEventListener("click", () => {
-    if (score.gte(500)) {
-      score = score.minus(500);
+    if (score.gte(PRICES.buy1)) {
+      score = score.minus(PRICES.buy1);
       people.push({
         speed: 50,
         upg: 0,
@@ -654,8 +773,8 @@ try {
     }
   });
   document.getElementById("buy2").addEventListener("click", () => {
-    if (score.gte(1500)) {
-      score = score.minus(1500);
+    if (score.gte(PRICES.buy2)) {
+      score = score.minus(PRICES.buy2);
       people.push({
         speed: 100,
         upg: 0,
@@ -670,8 +789,8 @@ try {
     }
   });
   document.getElementById("buy3").addEventListener("click", () => {
-    if (score.gte(2500)) {
-      score = score.minus(2500);
+    if (score.gte(PRICES.buy3)) {
+      score = score.minus(PRICES.buy3);
       people.push({
         speed: 200,
         upg: 0,
@@ -687,8 +806,8 @@ try {
     }
   });
   document.getElementById("buy4").addEventListener("click", () => {
-    if (score.gte(5000)) {
-      score = score.minus(5000);
+    if (score.gte(PRICES.buy4)) {
+      score = score.minus(PRICES.buy4);
       people.push({
         speed: 500,
         upg: 0,
@@ -704,8 +823,8 @@ try {
     }
   });
   document.getElementById("buy5").addEventListener("click", () => {
-    if (score.gte(100000)) {
-      score = score.minus(100000);
+    if (score.gte(PRICES.buy5)) {
+      score = score.minus(PRICES.buy5);
       people.push({
         speed: 10000,
         upg: 0,
@@ -721,8 +840,8 @@ try {
     }
   });
   document.getElementById("buy6").addEventListener("click", () => {
-    if (score.gte(1000000)) {
-      score = score.minus(1000000);
+    if (score.gte(PRICES.buy6)) {
+      score = score.minus(PRICES.buy6);
       people.push({
         speed: 100000,
         upg: 0,
@@ -738,8 +857,8 @@ try {
     }
   });
   document.getElementById("buy7").addEventListener("click", () => {
-    if (score.gte(100000000)) {
-      score = score.minus(100000000);
+    if (score.gte(PRICES.buy7)) {
+      score = score.minus(PRICES.buy7);
       people.push({
         speed: 1000000,
         upg: 0,
@@ -755,8 +874,8 @@ try {
     }
   });
   document.getElementById("buy8").addEventListener("click", () => {
-    if (score.gte(10000000000)) {
-      score = score.minus(10000000000);
+    if (score.gte(PRICES.buy8)) {
+      score = score.minus(PRICES.buy8);
       people.push({
         speed: 10000000,
         upg: 0,
@@ -772,8 +891,8 @@ try {
     }
   });
   document.getElementById("buy9").addEventListener("click", () => {
-    if (score.gte(100000000000)) {
-      score = score.minus(100000000000);
+    if (score.gte(PRICES.buy9)) {
+      score = score.minus(PRICES.buy9);
       people.push({
         speed: 1000000000,
         upg: 0,
@@ -789,8 +908,8 @@ try {
     }
   });
   document.getElementById("buy10").addEventListener("click", () => {
-    if (score.gte(1000000000000)) {
-      score = score.minus(1000000000000);
+    if (score.gte(PRICES.buy10)) {
+      score = score.minus(PRICES.buy10);
       people.push({
         speed: 10000000000,
         upg: 0,
@@ -806,8 +925,8 @@ try {
     }
   });
   document.getElementById("buy11").addEventListener("click", () => {
-    if (score.gte(1000000000000000)) {
-      score = score.minus(1000000000000000);
+    if (score.gte(PRICES.buy11)) {
+      score = score.minus(PRICES.buy11);
       people.push({
         speed: 5000000000000000,
         upg: 0,
@@ -823,8 +942,8 @@ try {
     }
   });
   document.getElementById("buy12").addEventListener("click", () => {
-    if (score.gte(1000000000000000000)) {
-      score = score.minus(1000000000000000000);
+    if (score.gte(PRICES.buy12)) {
+      score = score.minus(PRICES.buy12);
       people.push({
         speed: 25000000000000000,
         upg: 0,
@@ -840,8 +959,8 @@ try {
     }
   });
   document.getElementById("buy13").addEventListener("click", () => {
-    if (score.gte("10000000000000000000000000")) {
-      score = score.minus("10000000000000000000000000");
+    if (score.gte(PRICES.buy13)) {
+      score = score.minus(PRICES.buy13);
       people.push({
         speed: 1000000000000000000000000000,
         upg: 0,
@@ -857,8 +976,8 @@ try {
     }
   });
   document.getElementById("buy14").addEventListener("click", () => {
-    if (score.gte("100000000000000000000000000000")) {
-      score = score.minus("100000000000000000000000000000");
+    if (score.gte(PRICES.buy14)) {
+      score = score.minus(PRICES.buy14);
       people.push({
         speed: 1000000000000000000000000000000000000000000000000000000,
         upg: 0,
@@ -876,8 +995,8 @@ try {
   document.getElementById("buy15").addEventListener("click", () => {
     //cost: 50 NoD
     //speed: 1 Vg
-    if (score.gte("1e60")) {
-      score = score.minus("1e60");
+    if (score.gte(PRICES.buy15)) {
+      score = score.minus(PRICES.buy15);
       people.push({
         speed: 1000000000000000000000000000000000000000000000000000000000000000,
         upg: 0,
@@ -895,8 +1014,8 @@ try {
 
   document.getElementById("buy16").addEventListener("click", () => {
     //cost: 100 qag
-    if (score.gte("1e75")) {
-      score = score.minus("1e75");
+    if (score.gte(PRICES.buy16)) {
+      score = score.minus(PRICES.buy16);
       people.push({
         speed: waitWhatSpeed,
         upg: 0,
@@ -913,8 +1032,8 @@ try {
   });
   document.getElementById("buy17").addEventListener("click", () => {
     //cost: 100 qace
-    if (score.gte("1e314")) {
-      score = score.minus("1e314");
+    if (score.gte(PRICES.buy17)) {
+      score = score.minus(PRICES.buy17);
       people.push({
         speed: new Decimal("1e333"),
         upg: 0,
@@ -931,8 +1050,8 @@ try {
   });
   document.getElementById("buy18").addEventListener("click", () => {
     //cost: 100 qac
-    if (score.gte("1e341")) {
-      score = score.minus("1e341");
+    if (score.gte(PRICES.buy18)) {
+      score = score.minus(PRICES.buy18);
       people.push({
         speed: new Decimal("1e666"),
         upg: 0,
@@ -948,14 +1067,14 @@ try {
     }
   });
   document.getElementById("buy19").addEventListener("click", () => {
-    if (!upgs.tacos && score.gte("1e674")) {
-      score = score.minus("1e674");
+    if (!upgs.tacos && score.gte(PRICES.buy19)) {
+      score = score.minus(PRICES.buy19);
       upgs.tacos = true;
       updateTacoUI();
     }
   });
   function rebirth() {
-    if (score.gte(new Decimal("1e72").times(upgs.rbirth + 1))) {
+    if (score.gte(new Decimal(PRICES.rebirthBase).times(upgs.rbirth + 1))) {
       const rebirthScore = score;
       upgs.autoclicker = false;
       upgs.mult = new Decimal(1);
@@ -965,9 +1084,9 @@ try {
       score = new Decimal(500);
       grains = new Decimal(0);
       costs = {
-        autoclicker: 200,
-        mult: new Decimal(300),
-        bowls: new Decimal(100),
+        autoclicker: PRICES.autoclicker,
+        mult: new Decimal(PRICES.multBase),
+        bowls: new Decimal(PRICES.bowlsBase),
       };
       people = [
         {
@@ -993,7 +1112,7 @@ try {
     <h2>Are you SURE you want to rebirth?</h2>
     <p>This will clear your save, but it will give you rebirth bonuses (x2 score multiplier for first rebirth, then adds +x1 score multiplier per rebirth) and rebirth points, which will have functionality later.</p>
     <p>U sure?</p>
-    <p>Note: will cost ${formatter.format(new Decimal("1e72").times(upgs.rbirth * 0.25 + 1))} points to rebirth, and you will lose all your progress.</p>
+    <p>Note: will cost ${formatter.format(new Decimal(PRICES.rebirthBase).times(upgs.rbirth * 0.25 + 1))} points to rebirth, and you will lose all your progress.</p>
     <p>You have ${formatter.format(upgs.rbirthpts)} rebirth points, and will receive ${formatter.format(score.div("1e71").times(upgs.rbirth + 1))} points upon rebirth.</p>
     <p>p.s clear save clears your rebirths so dont click that</p><br>
     <button onclick="rebirth();this.parentElement.style.display='none';">Yes</button>
