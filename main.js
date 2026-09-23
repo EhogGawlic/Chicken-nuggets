@@ -509,6 +509,10 @@ function renderTacoPopupContent(index) {
     " (" +
     formatter.format(cost.toFixed(0)) +
     " pts)</button>";
+  if (level > 0){
+    popup.innerHTML +=
+    "<br><button id='tacoPopupBuy25'>Upgrade 25x</button>";
+  }
   document
     .getElementById("tacoPopupClose")
     .addEventListener("click", closeTacoPopup);
@@ -520,6 +524,17 @@ function renderTacoPopupContent(index) {
       updateTacoUI();
       renderTacoPopupContent(index);
     }
+  });
+  document.getElementById("tacoPopupBuy25").addEventListener("click", () => {
+    for (let i = 0; i < 25; i++) {
+      const currentCost = tacoTileCost(upgs.tacoTrees[index]);
+      if (score.gte(currentCost)) {
+        score = score.minus(currentCost);
+        upgs.tacoTrees[index] += 1;
+      }
+    }
+    updateTacoUI();
+    renderTacoPopupContent(index);
   });
 }
 
