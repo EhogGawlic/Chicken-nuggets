@@ -390,7 +390,7 @@ function tacoTreeUpgradeCost(level) {
 function tacoPlantedCount() {
   return upgs.tacoTrees.filter((lvl) => lvl > 0).length;
 }
-function tacoPlantCost() {
+function tacoPlantCost() {.0
   return new Decimal(PRICES.tacoTreeBase).times(
     new Decimal(PRICES.tacoPlantScale).pow(tacoPlantedCount()),
   );
@@ -510,8 +510,8 @@ function renderTacoPopupContent(index) {
     formatter.format(cost.toFixed(0)) +
     " pts)</button>";
   if (level > 0){
-    popup.innerHTML +=
-    "<br><button id='tacoPopupBuy25'>Upgrade 25x</button>";
+    popup.innerHTML += `<br><button id='tacoPopupBuy25'>Upgrade 25x</button>
+    <br><button id='tacoPopupBuy100'>Upgrade 100x</button>`;
   }
   document
     .getElementById("tacoPopupClose")
@@ -527,6 +527,17 @@ function renderTacoPopupContent(index) {
   });
   document.getElementById("tacoPopupBuy25").addEventListener("click", () => {
     for (let i = 0; i < 25; i++) {
+      const currentCost = tacoTileCost(upgs.tacoTrees[index]);
+      if (score.gte(currentCost)) {
+        score = score.minus(currentCost);
+        upgs.tacoTrees[index] += 1;
+      }
+    }
+    updateTacoUI();
+    renderTacoPopupContent(index);
+  });
+  document.getElementById("tacoPopupBuy100").addEventListener("click", () => {
+    for (let i = 0; i < 100; i++) {
       const currentCost = tacoTileCost(upgs.tacoTrees[index]);
       if (score.gte(currentCost)) {
         score = score.minus(currentCost);
@@ -743,6 +754,23 @@ document.getElementById("aapbowl").addEventListener("click", () => {
   document.getElementById("abowl").innerText =
     "add bowl (" + formatter.format(costs.bowls.toFixed(0)) + " pts)";
 });
+document.getElementById("aapmult").addEventListener("click", () => {
+  while (score.gte(costs.mult)) {
+    upgs.mult = upgs.mult.times(1.5);
+    score = score.minus(costs.mult);
+    costs.mult = new Decimal(PRICES.multBase)
+      .times(upgs.mult)
+      .times(PRICES.multScale)
+      .round();
+  }
+  document.getElementById("multiplier").innerText =
+    "multiplier (" + formatter.format(costs.mult.toFixed(0)) + " pts)";
+  ctx.clearRect(0, 0, canv.width, canv.height);
+  bowls.forEach((b) => {
+    drawBowl(b[0], b[1], b[2], b[2], b[4]);
+  });
+  ctx.fillText("Score: " + formatter.format(score), 10, 50);
+})
 function outputD(t) {
   outdiv.innerText += t + "\n";
   const count = (outdiv.innerText.match(/\n/g) || []).length;
